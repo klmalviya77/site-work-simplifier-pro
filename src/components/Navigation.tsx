@@ -1,19 +1,20 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 import { Home, Settings, List, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const Navigation: React.FC = () => {
   const navItems = [
     { name: 'Home', path: '/', icon: Home },
-    { name: 'Estimates', path: '/estimates', icon: FileText },
+    { name: 'Create', path: '/create-estimate', icon: FileText },
     { name: 'Saved', path: '/saved', icon: List },
     { name: 'Settings', path: '/settings', icon: Settings }
   ];
 
   // Get current path to highlight active nav item
-  const currentPath = window.location.pathname;
+  const location = useLocation();
+  const currentPath = location.pathname;
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 py-2 px-4 flex justify-around">

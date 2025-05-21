@@ -16,6 +16,8 @@ import SavedEstimatesPage from "./pages/SavedEstimatesPage";
 import SettingsPage from "./pages/SettingsPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import SplashScreen from "./components/SplashScreen";
+import MaterialGuidePage from "./pages/MaterialGuidePage";
+import CalculatorPage from "./pages/CalculatorPage";
 
 const queryClient = new QueryClient();
 
@@ -71,6 +73,18 @@ const AppRoutes = () => {
         <Route path="/settings" element={
           <ProtectedRoute>
             <SettingsPage />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/guide" element={
+          <ProtectedRoute>
+            <MaterialGuidePage />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/calculator" element={
+          <ProtectedRoute>
+            <CalculatorPage />
           </ProtectedRoute>
         } />
         

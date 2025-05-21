@@ -18,10 +18,13 @@ const FeatureCard: React.FC<FeatureCardProps> = ({
 }) => {
   return (
     <div 
-      className={cn("feature-card", className)}
+      className={cn(
+        "flex flex-col items-center justify-center p-5 bg-white border rounded-lg shadow-sm cursor-pointer transition-transform hover:scale-105",
+        className
+      )}
       onClick={onClick}
     >
-      <Icon className="feature-card-icon" />
+      <Icon className="h-8 w-8 mb-3 text-mistryblue-500" />
       <h3 className="font-medium text-center">{title}</h3>
     </div>
   );

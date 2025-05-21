@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { HardHat, Plug, FileText, List, Search, Calendar } from 'lucide-react';
+import { HardHat, Plug, FileText, List, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import FeatureCard from '@/components/FeatureCard';
@@ -64,13 +64,8 @@ const HomePage = () => {
               onClick={() => navigate('/guide')}
             />
             <FeatureCard 
-              title="Templates" 
+              title="Calculations" 
               icon={FileText}
-              onClick={() => navigate('/templates')}
-            />
-            <FeatureCard 
-              title="Material Calculator" 
-              icon={Calendar}
               onClick={() => navigate('/calculator')}
             />
           </div>
