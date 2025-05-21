@@ -53,7 +53,8 @@ const MaterialSelector = ({
               setFilteredMaterials(materials);
             }}
             onChange={(e) => {
-              setSelectedMaterial(e.target.value);
+              // We don't directly set selectedMaterial since it's a prop
+              // Instead we update the search query
               setSearchQuery(e.target.value);
             }}
             placeholder="Select or search material"
