@@ -25,6 +25,12 @@ const AuthContext = createContext<AuthContextType>({
 // Custom hook to use auth context
 export const useAuth = () => useContext(AuthContext);
 
+// Define a type for the profile data we expect from Supabase
+interface ProfileData {
+  name?: string | null;
+  phone_number?: string | null;
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -34,7 +40,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (session && session.user) {
-          // Get user profile data
+          // Get user profile data using type assertion to handle the unknown table
           const { data: profileData, error } = await supabase
             .from('profiles')
             .select('name, phone_number')
@@ -42,11 +48,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             .single();
 
           if (!error && profileData) {
+            // Use the ProfileData interface to type the profile data
+            const profile = profileData as ProfileData;
+            
             setUser({
               id: session.user.id,
               email: session.user.email,
               role: 'contractor', // Default role
-              name: profileData.name,
+              name: profile.name || undefined,
               isGuest: false,
             });
           } else {
@@ -70,7 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session && session.user) {
-        // Get user profile data
+        // Get user profile data using type assertion
         const { data: profileData, error } = await supabase
           .from('profiles')
           .select('name, phone_number')
@@ -78,11 +87,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .single();
 
         if (!error && profileData) {
+          // Use the ProfileData interface to type the profile data
+          const profile = profileData as ProfileData;
+          
           setUser({
             id: session.user.id,
             email: session.user.email,
             role: 'contractor', // Default role
-            name: profileData.name,
+            name: profile.name || undefined,
             isGuest: false,
           });
         } else {
