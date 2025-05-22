@@ -25,7 +25,7 @@ const LogoImage: React.FC<LogoProps> = ({ size = 'medium', withText = true }) =>
       
       {withText && (
         <span className={`font-bold ${textClasses[size]}`}>
-          MistryMate
+         
         </span>
       )}
     </div>
