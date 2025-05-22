@@ -1,6 +1,8 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { Json } from "@/integrations/supabase/types";
+import React from 'react';
 
 // Type definitions
 export interface EstimateItem {
@@ -44,7 +46,7 @@ export const saveEstimate = async (estimate: Estimate, userId?: string): Promise
           client_name: estimate.clientName || null,
           type: estimate.type,
           total: estimate.total,
-          items: estimate.items,
+          items: estimate.items as unknown as Json, // Cast to Json type for Supabase
           date: estimate.date
         });
       
@@ -99,7 +101,7 @@ export const getEstimates = async (userId?: string): Promise<Estimate[]> => {
     const supabaseEstimates = data.map(item => ({
       id: item.id,
       type: item.type as 'electrical' | 'plumbing',
-      items: item.items as EstimateItem[],
+      items: item.items as unknown as EstimateItem[], // Cast from Json to EstimateItem[]
       total: item.total,
       date: item.date,
       title: item.title || undefined,
@@ -194,7 +196,7 @@ export const syncPendingEstimates = async (userId: string): Promise<void> => {
           client_name: estimate.clientName || null,
           type: estimate.type,
           total: estimate.total,
-          items: estimate.items,
+          items: estimate.items as unknown as Json, // Cast to Json type for Supabase
           date: estimate.date
         });
       
