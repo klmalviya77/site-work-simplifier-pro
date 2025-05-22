@@ -12,6 +12,8 @@ import { useToast } from '@/hooks/use-toast';
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [isSignup, setIsSignup] = useState(false);
   const { login, signup, continueAsGuest, isLoading } = useAuth();
   const navigate = useNavigate();
@@ -22,7 +24,7 @@ const LoginPage = () => {
     
     try {
       if (isSignup) {
-        await signup(email, password, 'contractor');
+        await signup(email, password, 'contractor', name, phoneNumber);
         toast({
           title: "Account created!",
           description: "Welcome to MistryMate",
@@ -50,15 +52,15 @@ const LoginPage = () => {
   };
   
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4 dark:bg-gray-900">
       <div className="mb-8">
         <LogoImage size="large" />
       </div>
       
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md dark:bg-gray-800 dark:border-gray-700">
         <CardHeader>
-          <CardTitle>{isSignup ? 'Create Account' : 'Welcome Back'}</CardTitle>
-          <CardDescription>
+          <CardTitle className="dark:text-white">{isSignup ? 'Create Account' : 'Welcome Back'}</CardTitle>
+          <CardDescription className="dark:text-gray-300">
             {isSignup 
               ? 'Sign up to start creating estimates' 
               : 'Login to access your MistryMate account'}
@@ -67,8 +69,23 @@ const LoginPage = () => {
         
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {isSignup && (
+              <div className="space-y-2">
+                <Label htmlFor="name" className="dark:text-white">Full Name</Label>
+                <Input 
+                  id="name"
+                  type="text"
+                  placeholder="John Doe"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  className="dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                />
+              </div>
+            )}
+            
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="dark:text-white">Email</Label>
               <Input 
                 id="email"
                 type="email"
@@ -76,11 +93,12 @@ const LoginPage = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                className="dark:bg-gray-700 dark:text-white dark:border-gray-600"
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="dark:text-white">Password</Label>
               <Input 
                 id="password"
                 type="password"
@@ -88,12 +106,27 @@ const LoginPage = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                className="dark:bg-gray-700 dark:text-white dark:border-gray-600"
               />
             </div>
             
+            {isSignup && (
+              <div className="space-y-2">
+                <Label htmlFor="phone" className="dark:text-white">Phone Number (optional)</Label>
+                <Input 
+                  id="phone"
+                  type="tel"
+                  placeholder="+1234567890"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  className="dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                />
+              </div>
+            )}
+            
             <Button 
               type="submit" 
-              className="w-full bg-mistryblue-500 hover:bg-mistryblue-600"
+              className="w-full bg-mistryblue-500 hover:bg-mistryblue-600 dark:bg-mistryblue-600 dark:hover:bg-mistryblue-700"
               disabled={isLoading}
             >
               {isLoading ? 'Processing...' : isSignup ? 'Create Account' : 'Login'}
@@ -104,18 +137,18 @@ const LoginPage = () => {
         <CardFooter className="flex flex-col space-y-4">
           <Button 
             variant="outline" 
-            className="w-full"
+            className="w-full dark:text-white dark:border-gray-600 dark:hover:bg-gray-700"
             onClick={handleGuestMode}
             disabled={isLoading}
           >
             Continue as Guest
           </Button>
           
-          <div className="text-center text-sm">
+          <div className="text-center text-sm dark:text-gray-300">
             {isSignup ? 'Already have an account?' : "Don't have an account?"}{' '}
             <button
               type="button"
-              className="text-mistryblue-500 hover:underline font-medium"
+              className="text-mistryblue-500 hover:underline font-medium dark:text-mistryblue-400"
               onClick={() => setIsSignup(!isSignup)}
             >
               {isSignup ? 'Login' : 'Sign up'}
