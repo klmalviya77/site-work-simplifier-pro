@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Plug, HardHat } from 'lucide-react';
@@ -9,11 +8,14 @@ import MaterialSelector from '@/components/estimate/MaterialSelector';
 import EstimateForm from '@/components/estimate/EstimateForm';
 import EstimateItemsList, { EstimateItem } from '@/components/estimate/EstimateItemsList';
 import materialSuggestions, { Material } from '@/data/materialSuggestions';
+import { saveEstimate } from '@/services/estimateService';
+import { useAuth } from '@/contexts/AuthContext';
 
 const CreateEstimatePage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   
   // Get estimate type from state or default to electrical
   const initialType = location.state?.estimateType || 'electrical';
@@ -88,7 +90,7 @@ const CreateEstimatePage = () => {
     setItems(items.filter(item => item.id !== id));
   };
   
-  const handleSaveEstimate = () => {
+  const handleSaveEstimate = async () => {
     // In a real app, this would save the estimate to a database
     if (items.length === 0) {
       toast({
@@ -111,8 +113,13 @@ const CreateEstimatePage = () => {
       date: new Date().toISOString(),
     };
     
+    // Save to Supabase if user is logged in, otherwise save to localStorage
+    const savedToSupabase = user && !user.isGuest ? 
+      await saveEstimate(estimate, user.id) : 
+      await saveEstimate(estimate);
+
     // In a real app, save to backend
-    // For now, save to localStorage
+    // For now, save to localStorage (This is kept for backward compatibility)
     const savedEstimates = JSON.parse(localStorage.getItem('mistryMateEstimates') || '[]');
     localStorage.setItem('mistryMateEstimates', JSON.stringify([...savedEstimates, estimate]));
     

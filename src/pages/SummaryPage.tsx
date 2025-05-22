@@ -8,6 +8,8 @@ import { useToast } from '@/hooks/use-toast';
 import LogoImage from '@/components/LogoImage';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+import { useAuth } from '@/contexts/AuthContext';
+import { saveEstimate, Estimate as EstimateType } from '@/services/estimateService';
 
 interface EstimateItem {
   id: string;
@@ -33,10 +35,11 @@ const SummaryPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const contentRef = useRef<HTMLDivElement>(null);
   
   // Get estimate data from location state or redirect to home
-  const estimate = location.state?.estimate as Estimate | undefined;
+  const estimate = location.state?.estimate as EstimateType | undefined;
   
   const [title, setTitle] = useState(estimate?.title || '');
   const [clientName, setClientName] = useState(estimate?.clientName || '');
@@ -47,20 +50,28 @@ const SummaryPage = () => {
     return null;
   }
   
-  const handleSaveFinal = () => {
-    // In a real app, this would save to a database
-    const finalEstimate = {
+  const handleSaveFinal = async () => {
+    // Create the final estimate object with updated title and client name
+    const finalEstimate: EstimateType = {
       ...estimate,
       title: title || `${estimate.type.charAt(0).toUpperCase() + estimate.type.slice(1)} Estimate`,
       clientName,
       isFinal: true,
     };
     
-    // Save to localStorage
+    // Save to Supabase if user is logged in
+    if (user && !user.isGuest) {
+      await saveEstimate(finalEstimate, user.id);
+    } else {
+      // Save to local storage only
+      await saveEstimate(finalEstimate);
+    }
+    
+    // For backward compatibility, also save to the legacy localStorage format
     const savedEstimates = JSON.parse(localStorage.getItem('mistryMateEstimates') || '[]');
     
     // Find and replace if exists, otherwise add
-    const existingIndex = savedEstimates.findIndex((e: Estimate) => e.id === estimate.id);
+    const existingIndex = savedEstimates.findIndex((e: EstimateType) => e.id === estimate.id);
     if (existingIndex >= 0) {
       savedEstimates[existingIndex] = finalEstimate;
     } else {
