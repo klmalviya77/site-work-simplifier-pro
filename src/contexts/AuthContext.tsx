@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, UserRole } from '@/types/auth';
 import { supabase } from '@/integrations/supabase/client';
@@ -37,10 +36,67 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Set up auth state listener
   useEffect(() => {
+    // First set up the auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         if (session && session.user) {
-          // Get user profile data using type assertion to handle the unknown table
+          // Set user immediately with basic info to prevent UI blocks
+          setUser({
+            id: session.user.id,
+            email: session.user.email,
+            role: 'contractor', // Default role
+            isGuest: false,
+          });
+          
+          // Then fetch profile data asynchronously without blocking UI
+          setTimeout(async () => {
+            try {
+              const { data: profileData, error } = await supabase
+                .from('profiles')
+                .select('name, phone_number')
+                .eq('id', session.user.id)
+                .single();
+  
+              if (!error && profileData) {
+                const profile = profileData as ProfileData;
+                
+                setUser({
+                  id: session.user.id,
+                  email: session.user.email,
+                  role: 'contractor', // Default role
+                  name: profile.name || undefined,
+                  isGuest: false,
+                });
+              }
+            } catch (error) {
+              console.error("Error fetching profile:", error);
+              // Keep the basic user info we already set
+            } finally {
+              setIsLoading(false);
+            }
+          }, 0);
+        } else {
+          setUser(null);
+          setIsLoading(false);
+        }
+      }
+    );
+
+    // Check for existing session
+    const checkSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session && session.user) {
+          // Set user immediately with basic info
+          setUser({
+            id: session.user.id,
+            email: session.user.email,
+            role: 'contractor', // Default role
+            isGuest: false,
+          });
+          
+          // Fetch profile data asynchronously
           const { data: profileData, error } = await supabase
             .from('profiles')
             .select('name, phone_number')
@@ -48,66 +104,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             .single();
 
           if (!error && profileData) {
-            // Use the ProfileData interface to type the profile data
             const profile = profileData as ProfileData;
             
             setUser({
               id: session.user.id,
               email: session.user.email,
-              role: 'contractor', // Default role
+              role: 'contractor',
               name: profile.name || undefined,
               isGuest: false,
             });
-          } else {
-            // If profile not found, set user with basic info
-            setUser({
-              id: session.user.id,
-              email: session.user.email,
-              role: 'contractor',
-              isGuest: false,
-            });
           }
-        } else {
-          setUser(null);
         }
+      } catch (error) {
+        console.error("Session check failed:", error);
+      } finally {
         setIsLoading(false);
       }
-    );
-
-    // Check for existing session
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session && session.user) {
-        // Get user profile data using type assertion
-        const { data: profileData, error } = await supabase
-          .from('profiles')
-          .select('name, phone_number')
-          .eq('id', session.user.id)
-          .single();
-
-        if (!error && profileData) {
-          // Use the ProfileData interface to type the profile data
-          const profile = profileData as ProfileData;
-          
-          setUser({
-            id: session.user.id,
-            email: session.user.email,
-            role: 'contractor', // Default role
-            name: profile.name || undefined,
-            isGuest: false,
-          });
-        } else {
-          // If profile not found, set user with basic info
-          setUser({
-            id: session.user.id,
-            email: session.user.email,
-            role: 'contractor',
-            isGuest: false,
-          });
-        }
-      }
-      setIsLoading(false);
     };
 
     checkSession();
@@ -129,17 +141,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) throw error;
     } catch (error) {
       console.error('Login failed:', error);
+      setIsLoading(false); // Ensure loading state is reset on error
       throw error;
-    } finally {
-      setIsLoading(false);
     }
+    // Don't set isLoading to false here - the auth state listener will handle that
   };
 
   const signup = async (email: string, password: string, role: UserRole, name?: string, phoneNumber?: string) => {
     setIsLoading(true);
     
     try {
-      // Include name and phone_number in the user metadata
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -155,10 +166,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) throw error;
     } catch (error) {
       console.error('Signup failed:', error);
+      setIsLoading(false); // Ensure loading state is reset on error
       throw error;
-    } finally {
-      setIsLoading(false);
     }
+    // Don't set isLoading to false here - the auth state listener will handle that
   };
 
   const continueAsGuest = () => {
@@ -167,14 +178,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       role: 'guest',
       isGuest: true,
     });
+    setIsLoading(false);
   };
 
   const logout = async () => {
+    setIsLoading(true);
     try {
       await supabase.auth.signOut();
       setUser(null);
     } catch (error) {
       console.error('Logout failed:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 

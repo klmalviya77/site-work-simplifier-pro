@@ -16,7 +16,8 @@ const LoginPage = () => {
   const [name, setName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isSignup, setIsSignup] = useState(false);
-  const { login, signup, continueAsGuest, isLoading, user } = useAuth();
+  const [localLoading, setLocalLoading] = useState(false);
+  const { login, signup, continueAsGuest, isLoading: authLoading, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -29,6 +30,7 @@ const LoginPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLocalLoading(true);
     
     try {
       if (isSignup) {
@@ -52,6 +54,8 @@ const LoginPage = () => {
         description: error.message || "Please check your credentials and try again",
         variant: "destructive",
       });
+    } finally {
+      setLocalLoading(false);
     }
   };
   
@@ -59,6 +63,9 @@ const LoginPage = () => {
     continueAsGuest();
     navigate('/');
   };
+  
+  // Determine if button should be disabled
+  const isButtonDisabled = localLoading || authLoading;
   
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4 dark:bg-gray-900">
@@ -89,6 +96,7 @@ const LoginPage = () => {
                   onChange={(e) => setName(e.target.value)}
                   required
                   className="dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                  disabled={isButtonDisabled}
                 />
               </div>
             )}
@@ -103,6 +111,7 @@ const LoginPage = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className="dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                disabled={isButtonDisabled}
               />
             </div>
             
@@ -116,6 +125,7 @@ const LoginPage = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 className="dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                disabled={isButtonDisabled}
               />
             </div>
             
@@ -129,6 +139,7 @@ const LoginPage = () => {
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
                   className="dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                  disabled={isButtonDisabled}
                 />
               </div>
             )}
@@ -136,9 +147,9 @@ const LoginPage = () => {
             <Button 
               type="submit" 
               className="w-full bg-mistryblue-500 hover:bg-mistryblue-600 dark:bg-mistryblue-600 dark:hover:bg-mistryblue-700"
-              disabled={isLoading}
+              disabled={isButtonDisabled}
             >
-              {isLoading ? 'Processing...' : isSignup ? 'Create Account' : 'Login'}
+              {localLoading ? 'Processing...' : isSignup ? 'Create Account' : 'Login'}
             </Button>
           </form>
         </CardContent>
@@ -148,7 +159,7 @@ const LoginPage = () => {
             variant="outline" 
             className="w-full dark:text-white dark:border-gray-600 dark:hover:bg-gray-700"
             onClick={handleGuestMode}
-            disabled={isLoading}
+            disabled={isButtonDisabled}
           >
             Continue as Guest
           </Button>
@@ -159,6 +170,7 @@ const LoginPage = () => {
               type="button"
               className="text-mistryblue-500 hover:underline font-medium dark:text-mistryblue-400"
               onClick={() => setIsSignup(!isSignup)}
+              disabled={isButtonDisabled}
             >
               {isSignup ? 'Login' : 'Sign up'}
             </button>
