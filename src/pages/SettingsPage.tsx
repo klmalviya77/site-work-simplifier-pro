@@ -31,11 +31,11 @@ const SettingsPage = () => {
     });
   };
   
-  const handleThemeChange = (isDark: boolean) => {
-    setTheme(isDark ? 'dark' : 'light');
+  const handleThemeChange = (checked: boolean) => {
+    setTheme(checked ? 'dark' : 'light');
     toast({
       title: "Theme changed",
-      description: `Switched to ${isDark ? 'dark' : 'light'} mode`,
+      description: `Switched to ${checked ? 'dark' : 'light'} mode`,
     });
   };
   
@@ -104,14 +104,14 @@ const SettingsPage = () => {
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <Sun size={18} className="dark:text-gray-300" />
+                <Sun size={18} className="text-gray-700 dark:text-gray-300" />
                 <Label htmlFor="theme-mode" className="dark:text-gray-300">Dark Mode</Label>
-                <Moon size={18} className="dark:text-white" />
+                <Moon size={18} className="text-gray-700 dark:text-white" />
               </div>
               <Switch 
                 id="theme-mode" 
                 checked={theme === 'dark'}
-                onCheckedChange={handleThemeChange} 
+                onCheckedChange={handleThemeChange}
               />
             </div>
             

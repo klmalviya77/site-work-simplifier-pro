@@ -32,75 +32,73 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Set up auth state listener
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         if (session && session.user) {
           // Get user profile data
-          const fetchUserProfile = async () => {
-            const { data: profileData, error } = await supabase
-              .from('profiles')
-              .select('name, phone_number')
-              .eq('id', session.user.id)
-              .single();
+          const { data: profileData, error } = await supabase
+            .from('profiles')
+            .select('name, phone_number')
+            .eq('id', session.user.id)
+            .single();
 
-            if (!error && profileData) {
-              setUser({
-                id: session.user.id,
-                email: session.user.email,
-                role: 'contractor', // Default role
-                name: profileData.name,
-                isGuest: false,
-              });
-            } else {
-              // If profile not found, set user with basic info
-              setUser({
-                id: session.user.id,
-                email: session.user.email,
-                role: 'contractor',
-                isGuest: false,
-              });
-            }
-          };
-
-          fetchUserProfile();
+          if (!error && profileData) {
+            setUser({
+              id: session.user.id,
+              email: session.user.email,
+              role: 'contractor', // Default role
+              name: profileData.name,
+              isGuest: false,
+            });
+          } else {
+            // If profile not found, set user with basic info
+            setUser({
+              id: session.user.id,
+              email: session.user.email,
+              role: 'contractor',
+              isGuest: false,
+            });
+          }
         } else {
           setUser(null);
         }
+        setIsLoading(false);
       }
     );
 
     // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
       if (session && session.user) {
         // Get user profile data
-        supabase
+        const { data: profileData, error } = await supabase
           .from('profiles')
           .select('name, phone_number')
           .eq('id', session.user.id)
-          .single()
-          .then(({ data: profileData, error }) => {
-            if (!error && profileData) {
-              setUser({
-                id: session.user.id,
-                email: session.user.email,
-                role: 'contractor', // Default role
-                name: profileData.name,
-                isGuest: false,
-              });
-            } else {
-              // If profile not found, set user with basic info
-              setUser({
-                id: session.user.id,
-                email: session.user.email,
-                role: 'contractor',
-                isGuest: false,
-              });
-            }
-            setIsLoading(false);
+          .single();
+
+        if (!error && profileData) {
+          setUser({
+            id: session.user.id,
+            email: session.user.email,
+            role: 'contractor', // Default role
+            name: profileData.name,
+            isGuest: false,
           });
-      } else {
-        setIsLoading(false);
+        } else {
+          // If profile not found, set user with basic info
+          setUser({
+            id: session.user.id,
+            email: session.user.email,
+            role: 'contractor',
+            isGuest: false,
+          });
+        }
       }
-    });
+      setIsLoading(false);
+    };
+
+    checkSession();
 
     return () => {
       subscription.unsubscribe();
@@ -129,6 +127,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     
     try {
+      // Include name and phone_number in the user metadata
       const { error } = await supabase.auth.signUp({
         email,
         password,
