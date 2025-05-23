@@ -11,6 +11,15 @@ import materialSuggestions, { Material } from '@/data/materialSuggestions';
 import { saveEstimate } from '@/services/estimateService';
 import { useAuth } from '@/contexts/AuthContext';
 
+// Utility function to generate UUID
+const generateUUID = (): string => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c == 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
 const CreateEstimatePage = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -57,7 +66,7 @@ const CreateEstimatePage = () => {
     }
     
     const newEstimateItem: EstimateItem = {
-      id: Date.now().toString(),
+      id: generateUUID(), // Use proper UUID generation
       name: selectedMaterial,
       category: newItem.category,
       quantity: quantity,
@@ -104,9 +113,9 @@ const CreateEstimatePage = () => {
     // Calculate total
     const total = items.reduce((sum, item) => sum + item.total, 0);
     
-    // Create estimate object
+    // Create estimate object with proper UUID
     const estimate = {
-      id: Date.now().toString(),
+      id: generateUUID(), // Use proper UUID generation instead of Date.now()
       type: estimateType,
       items,
       total,
