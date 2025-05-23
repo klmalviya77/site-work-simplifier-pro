@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Json } from "@/integrations/supabase/types";
@@ -52,7 +53,7 @@ export const saveEstimate = async (estimate: Estimate, userId?: string): Promise
       
       const { error } = await supabase
         .from('estimates')
-        .insert({
+        .upsert({
           id: estimate.id,
           user_id: userId,
           title: estimate.title || null,
