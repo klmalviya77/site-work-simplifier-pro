@@ -3,13 +3,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Json } from "@/integrations/supabase/types";
 import React from 'react';
 
-// Utility function to generate UUID
+// Properly generate a valid UUID v4
 const generateUUID = (): string => {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0;
-    const v = c == 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
+  return crypto.randomUUID();
 };
 
 // Type definitions
@@ -39,6 +35,12 @@ export interface Estimate {
  * Saves an estimate to both Supabase and local storage
  */
 export const saveEstimate = async (estimate: Estimate, userId?: string): Promise<boolean> => {
+  // Make sure estimate has a valid UUID
+  if (!estimate.id || !isValidUUID(estimate.id)) {
+    console.log("Fixing invalid UUID format for estimate");
+    estimate.id = generateUUID();
+  }
+  
   // Always save to local storage first
   saveEstimateToLocalStorage(estimate);
   
@@ -83,6 +85,12 @@ export const saveEstimate = async (estimate: Estimate, userId?: string): Promise
   }
   
   return true; // Return true for local storage success even if Supabase fails
+};
+
+// Helper function to check if a string is a valid UUID
+const isValidUUID = (str: string): boolean => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
 };
 
 /**

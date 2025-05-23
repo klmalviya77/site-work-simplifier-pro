@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { ThemeProvider } from "next-themes";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // Pages
@@ -28,8 +26,8 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   if (isLoading) {
     // Show a better loading state with skeleton UI
     return (
-      <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-        <div className="bg-mistryblue-500 dark:bg-mistryblue-600 text-white p-4 shadow-md">
+      <div className="h-screen flex flex-col bg-gray-50">
+        <div className="bg-mistryblue-500 text-white p-4 shadow-md">
           <Skeleton className="h-8 w-40" />
         </div>
         <div className="flex-grow p-4 max-w-lg mx-auto w-full">
@@ -147,17 +145,15 @@ function App() {
   
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider attribute="class" defaultTheme="light">
-        <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <AppRoutes />
-            </BrowserRouter>
-          </TooltipProvider>
-        </AuthProvider>
-      </ThemeProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
