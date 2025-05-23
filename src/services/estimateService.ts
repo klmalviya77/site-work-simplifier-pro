@@ -37,6 +37,9 @@ export const saveEstimate = async (estimate: Estimate, userId?: string): Promise
   // If user is logged in and online, save to Supabase
   if (userId && navigator.onLine) {
     try {
+      console.log("Saving estimate to Supabase with user ID:", userId);
+      console.log("Estimate data:", JSON.stringify(estimate));
+      
       const { error } = await supabase
         .from('estimates')
         .insert({
@@ -46,7 +49,7 @@ export const saveEstimate = async (estimate: Estimate, userId?: string): Promise
           client_name: estimate.clientName || null,
           type: estimate.type,
           total: estimate.total,
-          items: estimate.items as unknown as Json, // Cast to Json type for Supabase
+          items: estimate.items as unknown as Json, // Type assertion for Json compatibility
           date: estimate.date
         });
       
@@ -56,6 +59,7 @@ export const saveEstimate = async (estimate: Estimate, userId?: string): Promise
         return false;
       }
       
+      console.log("Estimate successfully saved to Supabase");
       // Update the estimate in local storage with synced status
       const updatedEstimate = { ...estimate, syncStatus: 'synced' as const };
       saveEstimateToLocalStorage(updatedEstimate);
@@ -119,7 +123,7 @@ export const getEstimates = async (userId?: string): Promise<Estimate[]> => {
     const supabaseEstimates = data.map((item: any) => ({
       id: item.id,
       type: item.type as 'electrical' | 'plumbing',
-      items: item.items as unknown as EstimateItem[], // Cast from Json to EstimateItem[]
+      items: item.items as unknown as EstimateItem[], // Type assertion for proper conversion
       total: item.total,
       date: item.date,
       title: item.title || undefined,
@@ -224,6 +228,7 @@ export const syncPendingEstimates = async (userId: string): Promise<void> => {
     
     for (const estimate of pendingEstimates) {
       try {
+        console.log(`Syncing estimate ${estimate.id} for user ${userId}`);
         const { error } = await supabase
           .from('estimates')
           .upsert({
@@ -233,11 +238,12 @@ export const syncPendingEstimates = async (userId: string): Promise<void> => {
             client_name: estimate.clientName || null,
             type: estimate.type,
             total: estimate.total,
-            items: estimate.items as unknown as Json, // Cast to Json type for Supabase
+            items: estimate.items as unknown as Json, // Type assertion for Json compatibility
             date: estimate.date
           });
         
         if (!error) {
+          console.log(`Successfully synced estimate ${estimate.id}`);
           // Remove from pending syncs
           const updatedPendingSyncs = getPendingSyncs().filter(id => id !== estimate.id);
           localStorage.setItem('mistryMatePendingSyncs', JSON.stringify(updatedPendingSyncs));
@@ -245,6 +251,8 @@ export const syncPendingEstimates = async (userId: string): Promise<void> => {
           // Update estimate sync status
           const updatedEstimate = { ...estimate, syncStatus: 'synced' as const };
           saveEstimateToLocalStorage(updatedEstimate);
+        } else {
+          console.error(`Failed to sync estimate ${estimate.id}:`, error);
         }
       } catch (error) {
         console.error(`Failed to sync estimate ${estimate.id}:`, error);
