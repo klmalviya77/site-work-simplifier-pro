@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
 interface Material {
@@ -77,25 +76,14 @@ const MaterialSelector = ({
         Material
       </label>
       <div className="relative">
-        <div className="relative">
-          <Input 
-            id="material"
-            value={searchQuery || selectedMaterial}
-            onClick={handleInputClick}
-            onChange={handleInputChange}
-            placeholder="Select or search material"
-            className="w-full pr-12 border-2 dark:bg-gray-700 dark:text-white dark:border-gray-600 text-ellipsis"
-            style={{ 
-              paddingRight: '3rem',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden'
-            }}
-          />
-          <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-            <ArrowDown size={18} className="text-gray-500 dark:text-gray-300" />
-          </div>
-        </div>
+        <Input 
+          id="material"
+          value={searchQuery || selectedMaterial}
+          onClick={handleInputClick}
+          onChange={handleInputChange}
+          placeholder="Select or search material"
+          className="w-full border-2 dark:bg-gray-700 dark:text-white dark:border-gray-600"
+        />
         
         {isDropdownOpen && (
           <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg max-h-60 overflow-auto">
