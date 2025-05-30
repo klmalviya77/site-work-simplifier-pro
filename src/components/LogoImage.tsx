@@ -22,7 +22,7 @@ const LogoImage: React.FC<LogoProps> = ({ size = 'medium', withText = false }) =
     <div className="flex items-center gap-2">
       <div className={sizeClasses[size]}>
         <img 
-          src="/lovable-uploads/35511a98-cc51-4178-89a8-8e46825e2f27.png" 
+          src="/lovable-uploads/IMG_20250531_011258.png" 
           alt="MistryMate Logo" 
           className="h-full" 
         />
