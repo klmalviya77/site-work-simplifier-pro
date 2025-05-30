@@ -52,7 +52,7 @@ const CreateEstimatePage = () => {
   };
   
   const handleAddItem = () => {
-    if (!selectedMaterial || quantity <= 0 || rate <= 0) {
+    if (!selectedMaterial || quantity <= 0 || rate < 0) {
       toast({
         title: "Invalid input",
         description: "Please select a material and provide valid quantity and rate",

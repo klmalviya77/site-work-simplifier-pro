@@ -59,7 +59,7 @@ const EstimateForm = ({
       <Button
         className="w-full bg-mistryblue-500 hover:bg-mistryblue-600 py-6 text-base"
         onClick={onAddItem}
-        disabled={!selectedMaterial || quantity <= 0 || rate <= 0}
+        disabled={!selectedMaterial || quantity <= 0 || rate < 0}
       >
         Add to Estimate
       </Button>

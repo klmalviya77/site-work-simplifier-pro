@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ArrowDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
@@ -25,6 +25,8 @@ const MaterialSelector = ({
 }: MaterialSelectorProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredMaterials, setFilteredMaterials] = useState<Material[]>(materials);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
     // Update filtered materials when search query changes
@@ -38,8 +40,39 @@ const MaterialSelector = ({
     }
   }, [searchQuery, materials]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    setIsDropdownOpen(true);
+  };
+
+  const handleInputClick = () => {
+    setIsDropdownOpen(true);
+    setFilteredMaterials(materials);
+  };
+
+  const handleMaterialClick = (material: Material) => {
+    onMaterialSelect(material);
+    setSearchQuery('');
+    setIsDropdownOpen(false);
+  };
+
   return (
-    <div className="mb-6">
+    <div className="mb-6" ref={dropdownRef}>
       <label htmlFor="material" className="block text-base font-medium mb-2 dark:text-white">
         Material
       </label>
@@ -47,16 +80,9 @@ const MaterialSelector = ({
         <div className="relative">
           <Input 
             id="material"
-            value={selectedMaterial}
-            onClick={() => {
-              // Show all materials when clicking the input
-              setFilteredMaterials(materials);
-            }}
-            onChange={(e) => {
-              // We don't directly set selectedMaterial since it's a prop
-              // Instead we update the search query
-              setSearchQuery(e.target.value);
-            }}
+            value={searchQuery || selectedMaterial}
+            onClick={handleInputClick}
+            onChange={handleInputChange}
             placeholder="Select or search material"
             className="w-full pr-10 border-2 dark:bg-gray-700 dark:text-white dark:border-gray-600"
           />
@@ -65,17 +91,14 @@ const MaterialSelector = ({
           </div>
         </div>
         
-        {searchQuery || selectedMaterial === '' ? (
-          <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg max-h-60 overflow-auto">
+        {isDropdownOpen && (
+          <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg max-h-60 overflow-auto">
             {filteredMaterials.length > 0 ? (
               filteredMaterials.map((material, index) => (
                 <div
                   key={index}
                   className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer flex justify-between"
-                  onClick={() => {
-                    onMaterialSelect(material);
-                    setSearchQuery('');
-                  }}
+                  onClick={() => handleMaterialClick(material)}
                 >
                   <span className="dark:text-white">{material.name}</span>
                   <span className="text-gray-500 dark:text-gray-300">
@@ -87,7 +110,7 @@ const MaterialSelector = ({
               <div className="px-4 py-2 text-gray-500 dark:text-gray-300">No materials found</div>
             )}
           </div>
-        ) : null}
+        )}
       </div>
     </div>
   );
