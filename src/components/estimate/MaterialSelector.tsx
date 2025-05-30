@@ -84,7 +84,13 @@ const MaterialSelector = ({
             onClick={handleInputClick}
             onChange={handleInputChange}
             placeholder="Select or search material"
-            className="w-full pr-10 border-2 dark:bg-gray-700 dark:text-white dark:border-gray-600"
+            className="w-full pr-12 border-2 dark:bg-gray-700 dark:text-white dark:border-gray-600 text-ellipsis"
+            style={{ 
+              paddingRight: '3rem',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden'
+            }}
           />
           <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
             <ArrowDown size={18} className="text-gray-500 dark:text-gray-300" />
@@ -97,11 +103,13 @@ const MaterialSelector = ({
               filteredMaterials.map((material, index) => (
                 <div
                   key={index}
-                  className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer flex justify-between"
+                  className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer flex justify-between items-center"
                   onClick={() => handleMaterialClick(material)}
                 >
-                  <span className="dark:text-white">{material.name}</span>
-                  <span className="text-gray-500 dark:text-gray-300">
+                  <span className="dark:text-white truncate flex-1 mr-2" title={material.name}>
+                    {material.name}
+                  </span>
+                  <span className="text-gray-500 dark:text-gray-300 flex-shrink-0">
                     ₹{material.rate !== null && material.rate !== undefined ? material.rate : 0}/{material.unit}
                   </span>
                 </div>
