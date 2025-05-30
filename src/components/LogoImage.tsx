@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface LogoProps {
@@ -6,11 +5,11 @@ interface LogoProps {
   withText?: boolean;
 }
 
-const LogoImage: React.FC<LogoProps> = ({ size = 'medium', withText = true }) => {
+const LogoImage: React.FC<LogoProps> = ({ size = 'medium', withText = false }) => {
   const sizeClasses = {
-    small: 'h-8',
-    medium: 'h-12',
-    large: 'h-16',
+    small: 'h-10',  // Increased from h-8
+    medium: 'h-14', // Increased from h-12
+    large: 'h-20',  // Increased from h-16
   };
 
   const textClasses = {
