@@ -170,165 +170,269 @@ const SummaryPage = () => {
       
       let yPosition = margin;
 
-      // Company Header with Logo and Branding
-      pdf.setFillColor(0, 105, 208); // Blue background
-      pdf.rect(0, 0, pageWidth, 40, 'F');
+      // Professional Header with Gradient Background
+      pdf.setFillColor(8, 47, 125); // Deep blue
+      pdf.rect(0, 0, pageWidth, 50, 'F');
       
-      // Company Name
+      // Add subtle pattern/texture effect
+      pdf.setFillColor(16, 64, 158); // Slightly lighter blue
+      pdf.rect(0, 25, pageWidth, 25, 'F');
+      
+      // Company Logo Area (placeholder for now)
+      pdf.setFillColor(255, 255, 255); // White circle for logo
+      pdf.circle(margin + 15, 25, 12, 'F');
+      pdf.setTextColor(8, 47, 125);
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('MM', margin + 10, 29);
+      
+      // Company Name and Branding
       pdf.setTextColor(255, 255, 255); // White text
+      pdf.setFontSize(28);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('MistryMate', margin + 35, 22);
+      
+      // Professional Tagline
+      pdf.setFontSize(11);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Professional Construction Estimates & Site Work Solutions', margin + 35, 30);
+      
+      // Contact Information - Right aligned
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Email: support@mistrymate.com', pageWidth - margin, 18, { align: 'right' });
+      pdf.text('Phone: +91 9876 543 210', pageWidth - margin, 24, { align: 'right' });
+      pdf.text('Web: www.mistrymate.com', pageWidth - margin, 30, { align: 'right' });
+      
+      // Professional border line
+      pdf.setDrawColor(255, 204, 0); // Gold accent
+      pdf.setLineWidth(2);
+      pdf.line(0, 50, pageWidth, 50);
+
+      yPosition = 65;
+
+      // Document Title with Professional Styling
+      pdf.setTextColor(8, 47, 125);
       pdf.setFontSize(24);
       pdf.setFont('helvetica', 'bold');
-      pdf.text('MistryMate', margin, 20);
+      pdf.text('COST ESTIMATE', pageWidth / 2, yPosition, { align: 'center' });
       
-      // Tagline
-      pdf.setFontSize(12);
+      // Decorative line under title
+      pdf.setDrawColor(255, 204, 0);
+      pdf.setLineWidth(1);
+      pdf.line(pageWidth / 2 - 30, yPosition + 3, pageWidth / 2 + 30, yPosition + 3);
+      
+      yPosition += 20;
+
+      // Professional Information Box with Shadow Effect
+      // Shadow
+      pdf.setFillColor(200, 200, 200);
+      pdf.rect(margin + 2, yPosition + 2, contentWidth, 45, 'F');
+      
+      // Main box
+      pdf.setFillColor(248, 250, 252); // Very light blue-gray
+      pdf.rect(margin, yPosition, contentWidth, 45, 'F');
+      
+      // Border
+      pdf.setDrawColor(8, 47, 125);
+      pdf.setLineWidth(0.5);
+      pdf.rect(margin, yPosition, contentWidth, 45, 'S');
+
+      // Information Content with Better Typography
+      pdf.setTextColor(8, 47, 125);
+      pdf.setFontSize(11);
+      pdf.setFont('helvetica', 'bold');
+      
+      // Left column headers
+      pdf.text('ESTIMATE DETAILS', margin + 8, yPosition + 10);
       pdf.setFont('helvetica', 'normal');
-      pdf.text('Professional Site Work Estimates', margin, 28);
-      
-      // Contact info in header
       pdf.setFontSize(10);
-      pdf.text('support@mistrymate.com | +91 9876543210', pageWidth - margin, 20, { align: 'right' });
-      pdf.text('www.mistrymate.com', pageWidth - margin, 28, { align: 'right' });
-
-      yPosition = 50;
-
-      // Document Title
-      pdf.setTextColor(0, 0, 0);
-      pdf.setFontSize(18);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('ESTIMATE SUMMARY', pageWidth / 2, yPosition, { align: 'center' });
+      pdf.setTextColor(60, 60, 60);
       
-      yPosition += 15;
-
-      // Estimate Information Box
-      pdf.setFillColor(248, 249, 250); // Light gray background
-      pdf.rect(margin, yPosition, contentWidth, 40, 'F');
-      pdf.setDrawColor(200, 200, 200);
-      pdf.rect(margin, yPosition, contentWidth, 40, 'S');
-
-      pdf.setFontSize(12);
+      pdf.text(`Project Title:`, margin + 8, yPosition + 18);
       pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(0, 0, 0);
+      pdf.text(`${title || 'Untitled Estimate'}`, margin + 35, yPosition + 18);
       
-      // Left column
-      pdf.text('Estimate Details:', margin + 5, yPosition + 8);
       pdf.setFont('helvetica', 'normal');
-      pdf.text(`Title: ${title || 'Untitled Estimate'}`, margin + 5, yPosition + 16);
-      pdf.text(`Client: ${clientName || 'Not specified'}`, margin + 5, yPosition + 24);
-      pdf.text(`Type: ${estimate.type.charAt(0).toUpperCase() + estimate.type.slice(1)}`, margin + 5, yPosition + 32);
+      pdf.text(`Client Name:`, margin + 8, yPosition + 26);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`${clientName || 'Not Specified'}`, margin + 35, yPosition + 26);
+      
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`Work Type:`, margin + 8, yPosition + 34);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`${estimate.type.charAt(0).toUpperCase() + estimate.type.slice(1)} Work`, margin + 35, yPosition + 34);
       
       // Right column
       pdf.setFont('helvetica', 'normal');
-      pdf.text(`Date: ${formatDate(estimate.date)}`, margin + 100, yPosition + 16);
-      pdf.text(`Total Items: ${estimate.items.length}`, margin + 100, yPosition + 24);
-      pdf.text(`Estimate ID: ${estimate.id.slice(0, 8)}`, margin + 100, yPosition + 32);
+      pdf.setTextColor(60, 60, 60);
+      pdf.text(`Estimate Date:`, margin + 105, yPosition + 18);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`${formatDate(estimate.date)}`, margin + 140, yPosition + 18);
+      
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`Total Items:`, margin + 105, yPosition + 26);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`${estimate.items.length}`, margin + 140, yPosition + 26);
+      
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`Estimate ID:`, margin + 105, yPosition + 34);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`#${estimate.id.slice(0, 8).toUpperCase()}`, margin + 140, yPosition + 34);
 
-      yPosition += 55;
+      yPosition += 60;
 
-      // Items Table Header
-      pdf.setFillColor(0, 105, 208);
-      pdf.rect(margin, yPosition, contentWidth, 12, 'F');
+      // Professional Table Header with Gradient
+      pdf.setFillColor(8, 47, 125); // Dark blue header
+      pdf.rect(margin, yPosition, contentWidth, 15, 'F');
+      
+      // Header shadow
+      pdf.setFillColor(0, 0, 0, 0.1);
+      pdf.rect(margin, yPosition + 15, contentWidth, 2, 'F');
       
       pdf.setTextColor(255, 255, 255);
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(11);
       
-      // Table headers
-      pdf.text('Item Description', margin + 3, yPosition + 8);
-      pdf.text('Qty', margin + 100, yPosition + 8);
-      pdf.text('Unit', margin + 120, yPosition + 8);
-      pdf.text('Rate (₹)', margin + 140, yPosition + 8);
-      pdf.text('Amount (₹)', margin + 165, yPosition + 8);
+      // Improved column headers with better spacing
+      pdf.text('DESCRIPTION', margin + 5, yPosition + 10);
+      pdf.text('QTY', margin + 85, yPosition + 10);
+      pdf.text('UNIT', margin + 105, yPosition + 10);
+      pdf.text('RATE (₹)', margin + 125, yPosition + 10);
+      pdf.text('AMOUNT (₹)', margin + 155, yPosition + 10);
 
-      yPosition += 12;
+      yPosition += 17;
 
-      // Items Data
-      pdf.setTextColor(0, 0, 0);
+      // Items with Professional Styling
+      pdf.setTextColor(60, 60, 60);
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(10);
 
       estimate.items.forEach((item, index) => {
         // Check if we need a new page
-        if (yPosition > pageHeight - 60) {
+        if (yPosition > pageHeight - 80) {
           pdf.addPage();
           yPosition = margin;
           
-          // Repeat header on new page
-          pdf.setFillColor(0, 105, 208);
-          pdf.rect(margin, yPosition, contentWidth, 12, 'F');
+          // Repeat professional header on new page
+          pdf.setFillColor(8, 47, 125);
+          pdf.rect(margin, yPosition, contentWidth, 15, 'F');
           pdf.setTextColor(255, 255, 255);
           pdf.setFont('helvetica', 'bold');
           pdf.setFontSize(11);
-          pdf.text('Item Description', margin + 3, yPosition + 8);
-          pdf.text('Qty', margin + 100, yPosition + 8);
-          pdf.text('Unit', margin + 120, yPosition + 8);
-          pdf.text('Rate (₹)', margin + 140, yPosition + 8);
-          pdf.text('Amount (₹)', margin + 165, yPosition + 8);
-          yPosition += 12;
+          pdf.text('DESCRIPTION', margin + 5, yPosition + 10);
+          pdf.text('QTY', margin + 85, yPosition + 10);
+          pdf.text('UNIT', margin + 105, yPosition + 10);
+          pdf.text('RATE (₹)', margin + 125, yPosition + 10);
+          pdf.text('AMOUNT (₹)', margin + 155, yPosition + 10);
+          yPosition += 17;
           
-          pdf.setTextColor(0, 0, 0);
+          pdf.setTextColor(60, 60, 60);
           pdf.setFont('helvetica', 'normal');
           pdf.setFontSize(10);
         }
 
-        // Alternate row colors
-        if (index % 2 === 1) {
-          pdf.setFillColor(248, 249, 250);
-          pdf.rect(margin, yPosition, contentWidth, 10, 'F');
+        // Alternating row colors for better readability
+        if (index % 2 === 0) {
+          pdf.setFillColor(248, 250, 252); // Very light blue
+        } else {
+          pdf.setFillColor(255, 255, 255); // White
         }
+        pdf.rect(margin, yPosition, contentWidth, 12, 'F');
 
-        // Draw borders
-        pdf.setDrawColor(220, 220, 220);
-        pdf.rect(margin, yPosition, contentWidth, 10, 'S');
+        // Subtle borders
+        pdf.setDrawColor(220, 225, 230);
+        pdf.setLineWidth(0.3);
+        pdf.rect(margin, yPosition, contentWidth, 12, 'S');
 
-        // Item data
-        const itemName = item.name.length > 35 ? item.name.substring(0, 32) + '...' : item.name;
-        pdf.text(itemName, margin + 3, yPosition + 7);
-        pdf.text(item.quantity.toString(), margin + 100, yPosition + 7);
-        pdf.text(item.unit, margin + 120, yPosition + 7);
-        pdf.text(item.rate.toLocaleString('en-IN'), margin + 140, yPosition + 7);
-        pdf.text(item.total.toLocaleString('en-IN'), margin + 165, yPosition + 7);
-
-        yPosition += 10;
+        // Item data with better formatting
+        const itemName = item.name.length > 32 ? item.name.substring(0, 29) + '...' : item.name;
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(itemName, margin + 5, yPosition + 8);
+        
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(item.quantity.toString(), margin + 85, yPosition + 8, { align: 'center' });
+        
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(item.unit, margin + 105, yPosition + 8, { align: 'center' });
+        pdf.text(item.rate.toLocaleString('en-IN'), margin + 125, yPosition + 8, { align: 'center' });
+        
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(8, 47, 125);
+        pdf.text(`₹${item.total.toLocaleString('en-IN')}`, margin + 155, yPosition + 8, { align: 'center' });
+        
+        pdf.setTextColor(60, 60, 60);
+        yPosition += 12;
       });
 
-      // Total Section
-      yPosition += 10;
-      pdf.setFillColor(0, 105, 208);
-      pdf.rect(margin + 120, yPosition, 70, 15, 'F');
+      // Professional Total Section
+      yPosition += 8;
+      
+      // Total box with gradient
+      pdf.setFillColor(8, 47, 125); // Dark blue
+      pdf.rect(margin + 105, yPosition, 85, 20, 'F');
+      
+      // Gold accent border
+      pdf.setDrawColor(255, 204, 0);
+      pdf.setLineWidth(2);
+      pdf.rect(margin + 105, yPosition, 85, 20, 'S');
       
       pdf.setTextColor(255, 255, 255);
       pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(14);
-      pdf.text('GRAND TOTAL:', margin + 125, yPosition + 7);
-      pdf.text(`₹${estimate.total.toLocaleString('en-IN')}`, margin + 125, yPosition + 12);
-
-      // Footer section
-      yPosition = pageHeight - 40;
+      pdf.setFontSize(12);
+      pdf.text('GRAND TOTAL', margin + 110, yPosition + 8);
       
-      // Footer line
-      pdf.setDrawColor(0, 105, 208);
-      pdf.setLineWidth(0.5);
+      pdf.setFontSize(16);
+      pdf.text(`₹${estimate.total.toLocaleString('en-IN')}`, margin + 110, yPosition + 16);
+
+      // Professional Footer
+      yPosition = pageHeight - 50;
+      
+      // Footer background
+      pdf.setFillColor(248, 250, 252);
+      pdf.rect(0, yPosition - 5, pageWidth, 50, 'F');
+      
+      // Gold line separator
+      pdf.setDrawColor(255, 204, 0);
+      pdf.setLineWidth(1);
       pdf.line(margin, yPosition, pageWidth - margin, yPosition);
       
       yPosition += 10;
       
-      // Footer text
-      pdf.setTextColor(100, 100, 100);
-      pdf.setFont('helvetica', 'normal');
+      // Terms and conditions box
+      pdf.setFillColor(255, 255, 255);
+      pdf.rect(margin, yPosition, contentWidth, 25, 'F');
+      pdf.setDrawColor(200, 200, 200);
+      pdf.rect(margin, yPosition, contentWidth, 25, 'S');
+      
+      pdf.setTextColor(8, 47, 125);
+      pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(10);
-      pdf.text('Thank you for choosing MistryMate for your site work estimates.', pageWidth / 2, yPosition, { align: 'center' });
-      pdf.text('This is a digitally generated estimate. For any queries, contact us at support@mistrymate.com', pageWidth / 2, yPosition + 8, { align: 'center' });
+      pdf.text('TERMS & CONDITIONS', margin + 5, yPosition + 6);
+      
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8);
+      pdf.setTextColor(80, 80, 80);
+      pdf.text('• This estimate is valid for 30 days from the date of issue.', margin + 5, yPosition + 12);
+      pdf.text('• Prices are subject to change based on material availability and market conditions.', margin + 5, yPosition + 16);
+      pdf.text('• Payment terms: 50% advance, 30% on material delivery, 20% on completion.', margin + 5, yPosition + 20);
+      
+      // Company footer
+      yPosition += 30;
+      pdf.setTextColor(100, 100, 100);
+      pdf.setFont('helvetica', 'italic');
+      pdf.setFontSize(9);
+      pdf.text('Thank you for choosing MistryMate - Your trusted partner for professional construction estimates.', pageWidth / 2, yPosition, { align: 'center' });
       
       // Generate filename
-      const filename = `${(title || estimate.type).replace(/[^a-zA-Z0-9]/g, '_')}_estimate_${new Date().toISOString().slice(0, 10)}.pdf`;
+      const filename = `MistryMate_${(title || estimate.type).replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().slice(0, 10)}.pdf`;
       
       // Save PDF
       pdf.save(filename);
 
       toast({
-        title: "PDF Generated Successfully",
-        description: "Professional estimate downloaded",
+        title: "Professional PDF Generated",
+        description: "Your estimate has been exported successfully",
       });
     } catch (error) {
       console.error('PDF generation failed:', error);
@@ -339,10 +443,7 @@ const SummaryPage = () => {
       });
     } finally {
       setIsGeneratingPdf(false);
-      // Remove the loading toast manually using the toast result's dismiss method
-      if (loadingToastResult && typeof loadingToastResult.dismiss === 'function') {
-        loadingToastResult.dismiss();
-      }
+      loadingToastResult.dismiss();
     }
   };
   
