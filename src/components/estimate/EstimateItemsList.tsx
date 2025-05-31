@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
@@ -5,7 +6,9 @@ import { Trash2 } from 'lucide-react';
 export interface EstimateItem {
   id: string;
   name: string;
+  category: string;
   quantity: number;
+  unit: string;
   rate: number;
   total: number;
 }

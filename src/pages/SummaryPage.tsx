@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Share, FileText, Home, Loader2 } from 'lucide-react';
@@ -150,7 +149,7 @@ const SummaryPage = () => {
     if (isGeneratingPdf) return;
     
     setIsGeneratingPdf(true);
-    const loadingToast = toast({
+    const loadingToastResult = toast({
       title: "Generating PDF",
       description: "Creating professional estimate...",
       duration: Infinity,
@@ -340,7 +339,10 @@ const SummaryPage = () => {
       });
     } finally {
       setIsGeneratingPdf(false);
-      toast.dismiss(loadingToast.id);
+      // Remove the loading toast manually using the toast result's dismiss method
+      if (loadingToastResult && typeof loadingToastResult.dismiss === 'function') {
+        loadingToastResult.dismiss();
+      }
     }
   };
   

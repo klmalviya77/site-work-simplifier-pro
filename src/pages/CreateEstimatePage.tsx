@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Plug, HardHat } from 'lucide-react';
@@ -35,12 +36,12 @@ const CreateEstimatePage = () => {
     rate: 0,
   });
   
-  const [selectedMaterial, setSelectedMaterial] = useState<string>('');
+  const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
   const [quantity, setQuantity] = useState<number>(1);
   const [rate, setRate] = useState<number>(0);
   
   const handleMaterialSelect = (material: Material) => {
-    setSelectedMaterial(material.name);
+    setSelectedMaterial(material);
     setRate(material.rate);
     setNewItem({
       ...newItem,
@@ -62,11 +63,11 @@ const CreateEstimatePage = () => {
     }
     
     const newEstimateItem: EstimateItem = {
-      id: generateUUID(), // Use proper UUID generation
-      name: selectedMaterial,
-      category: newItem.category,
+      id: generateUUID(),
+      name: selectedMaterial.name,
+      category: selectedMaterial.category,
       quantity: quantity,
-      unit: newItem.unit,
+      unit: selectedMaterial.unit,
       rate: rate,
       total: quantity * rate,
     };
@@ -74,7 +75,7 @@ const CreateEstimatePage = () => {
     setItems([...items, newEstimateItem]);
     
     // Reset fields
-    setSelectedMaterial('');
+    setSelectedMaterial(null);
     setQuantity(1);
     setRate(0);
     setNewItem({
@@ -96,7 +97,6 @@ const CreateEstimatePage = () => {
   };
   
   const handleSaveEstimate = async () => {
-    // In a real app, this would save the estimate to a database
     if (items.length === 0) {
       toast({
         title: "Cannot save empty estimate",
@@ -111,7 +111,7 @@ const CreateEstimatePage = () => {
     
     // Create estimate object with proper UUID
     const estimate = {
-      id: generateUUID(), // Use proper UUID generation
+      id: generateUUID(),
       type: estimateType,
       items,
       total,
@@ -167,12 +167,11 @@ const CreateEstimatePage = () => {
           materials={materialSuggestions[estimateType]}
           selectedMaterial={selectedMaterial}
           onMaterialSelect={handleMaterialSelect}
-          estimateType={estimateType}
         />
         
         {/* Estimate Form (Quantity and Rate) */}
         <EstimateForm
-          selectedMaterial={selectedMaterial}
+          selectedMaterial={selectedMaterial?.name || ''}
           quantity={quantity}
           rate={rate}
           onQuantityChange={setQuantity}

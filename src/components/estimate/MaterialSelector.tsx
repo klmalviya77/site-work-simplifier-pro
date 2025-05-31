@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { useDebounce } from '@/hooks/use-debounce';
@@ -69,7 +70,6 @@ const MaterialSelector = ({
     if (e.key === 'Escape') {
       setIsDropdownOpen(false);
     }
-    // Add more keyboard navigation here
   };
 
   return (
@@ -100,14 +100,14 @@ const MaterialSelector = ({
               filteredMaterials.map((material, index) => (
                 <div
                   key={`${material.name}-${index}`}
-                  className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer flex justify-between items-center"
+                  className="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer flex justify-between items-center"
                   onClick={() => handleMaterialClick(material)}
                   role="option"
                 >
-                  <span className="dark:text-white truncate flex-1 mr-2">
+                  <span className="dark:text-white truncate flex-1 mr-2 text-sm">
                     {material.name}
                   </span>
-                  <span className="text-gray-500 dark:text-gray-300 flex-shrink-0">
+                  <span className="text-gray-500 dark:text-gray-300 flex-shrink-0 text-xs">
                     ₹{material.rate ?? 0}/{material.unit}
                   </span>
                 </div>
