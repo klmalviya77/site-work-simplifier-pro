@@ -44,7 +44,7 @@ const SummaryPage = () => {
   const [isSaving, setIsSaving] = useState(false);
 
   // Company logo URL - REPLACE WITH YOUR ACTUAL LOGO URL
-  const companyLogoUrl = 'https://i.postimg.cc/pVggTwHz/file-000000006a5461f5a5e784f197571687.png';
+  const companyLogoUrl = 'https://i.postimg.cc/JhPydg3z/1000185469-prev-ui.png';
   
   if (!estimate) {
     navigate('/');
