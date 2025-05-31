@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Share, FileText, Home } from 'lucide-react';
+import { Share, FileText, Home, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -43,6 +43,8 @@ const SummaryPage = () => {
   
   const [title, setTitle] = useState(estimate?.title || '');
   const [clientName, setClientName] = useState(estimate?.clientName || '');
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   
   if (!estimate) {
     // Redirect to home if no estimate data
@@ -51,41 +53,53 @@ const SummaryPage = () => {
   }
   
   const handleSaveFinal = async () => {
-    // Create the final estimate object with updated title and client name
-    const finalEstimate: EstimateType = {
-      ...estimate,
-      title: title || `${estimate.type.charAt(0).toUpperCase() + estimate.type.slice(1)} Estimate`,
-      clientName,
-      isFinal: true,
-    };
-    
-    // Save to Supabase if user is logged in
-    if (user && !user.isGuest) {
-      await saveEstimate(finalEstimate, user.id);
-    } else {
-      // Save to local storage only
-      await saveEstimate(finalEstimate);
+    setIsSaving(true);
+    try {
+      // Create the final estimate object with updated title and client name
+      const finalEstimate: EstimateType = {
+        ...estimate,
+        title: title || `${estimate.type.charAt(0).toUpperCase() + estimate.type.slice(1)} Estimate`,
+        clientName,
+        isFinal: true,
+      };
+      
+      // Save to Supabase if user is logged in
+      if (user && !user.isGuest) {
+        await saveEstimate(finalEstimate, user.id);
+      } else {
+        // Save to local storage only
+        await saveEstimate(finalEstimate);
+      }
+      
+      // For backward compatibility, also save to the legacy localStorage format
+      const savedEstimates = JSON.parse(localStorage.getItem('mistryMateEstimates') || '[]');
+      
+      // Find and replace if exists, otherwise add
+      const existingIndex = savedEstimates.findIndex((e: EstimateType) => e.id === estimate.id);
+      if (existingIndex >= 0) {
+        savedEstimates[existingIndex] = finalEstimate;
+      } else {
+        savedEstimates.push(finalEstimate);
+      }
+      
+      localStorage.setItem('mistryMateEstimates', JSON.stringify(savedEstimates));
+      
+      toast({
+        title: "Estimate finalized",
+        description: "Your estimate has been saved",
+      });
+      
+      navigate('/saved');
+    } catch (error) {
+      console.error('Save failed:', error);
+      toast({
+        title: "Save failed",
+        description: error instanceof Error ? error.message : "Could not save estimate",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
     }
-    
-    // For backward compatibility, also save to the legacy localStorage format
-    const savedEstimates = JSON.parse(localStorage.getItem('mistryMateEstimates') || '[]');
-    
-    // Find and replace if exists, otherwise add
-    const existingIndex = savedEstimates.findIndex((e: EstimateType) => e.id === estimate.id);
-    if (existingIndex >= 0) {
-      savedEstimates[existingIndex] = finalEstimate;
-    } else {
-      savedEstimates.push(finalEstimate);
-    }
-    
-    localStorage.setItem('mistryMateEstimates', JSON.stringify(savedEstimates));
-    
-    toast({
-      title: "Estimate finalized",
-      description: "Your estimate has been saved",
-    });
-    
-    navigate('/saved');
   };
   
   const handleShare = () => {
@@ -133,48 +147,55 @@ const SummaryPage = () => {
   };
   
   const handleExportPdf = async () => {
-    if (!contentRef.current) return;
+    if (!contentRef.current || isGeneratingPdf) return;
     
+    setIsGeneratingPdf(true);
+    const loadingToast = toast({
+      title: "Generating PDF",
+      description: "This may take a moment...",
+      duration: Infinity,
+    });
+
     try {
-      toast({
-        title: "Generating PDF",
-        description: "Please wait...",
-      });
-      
       const content = contentRef.current;
       const canvas = await html2canvas(content, {
-        scale: 2,
+        scale: 1,
         useCORS: true,
         logging: false,
+        ignoreElements: (el) => el.tagName === 'BUTTON',
       });
       
-      const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
-        format: 'a4',
       });
-      
-      const imgWidth = 210; // A4 width in mm
-      const pageHeight = 297; // A4 height in mm
+
+      // Dynamic PDF sizing
+      const imgWidth = 210;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-      
-      const filename = `${title || estimate.type}_estimate_${new Date().toLocaleDateString().replace(/\//g, '-')}.pdf`;
-      pdf.save(filename);
-      
+      // Add page if content too long
+      if (imgHeight > 297) {
+        pdf.addPage([210, imgHeight], 'portrait');
+      }
+
+      pdf.addImage(canvas, 'PNG', 0, 0, imgWidth, imgHeight);
+      pdf.save(`${title || estimate.type}_estimate.pdf`);
+
       toast({
-        title: "PDF exported",
-        description: "Your estimate has been downloaded as PDF",
+        title: "PDF Ready",
+        description: "Your estimate has been downloaded",
       });
     } catch (error) {
       console.error('PDF generation failed:', error);
       toast({
-        title: "PDF generation failed",
-        description: "Could not generate PDF",
+        title: "Failed to generate PDF",
+        description: "Please try again",
         variant: "destructive",
       });
+    } finally {
+      setIsGeneratingPdf(false);
+      toast.dismiss(loadingToast.id);
     }
   };
   
@@ -189,10 +210,14 @@ const SummaryPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-6">
       {/* Header */}
-      <header className="bg-mistryblue-500 dark:bg-mistryblue-600 text-white p-4">
+      <header className="bg-blue-600 dark:bg-blue-800 text-white p-4">
         <div className="flex justify-between items-center">
           <h1 className="text-xl font-bold">Estimate Summary</h1>
-          <Button variant="ghost" onClick={() => navigate('/')} className="text-white p-2">
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate('/')} 
+            className="text-white p-2 hover:bg-blue-700 dark:hover:bg-blue-900"
+          >
             <Home size={20} />
           </Button>
         </div>
@@ -279,28 +304,39 @@ const SummaryPage = () => {
           </Card>
         </div>
         
-        <div className="grid grid-cols-2 gap-3 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
           <Button
-            className="bg-mistryblue-500 hover:bg-mistryblue-600 dark:bg-mistryblue-600 dark:hover:bg-mistryblue-700"
+            className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
             onClick={handleSaveFinal}
+            disabled={isSaving}
           >
+            {isSaving ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : null}
             Save Estimate
           </Button>
           
           <Button
             variant="outline"
-            className="border-mistryblue-500 text-mistryblue-500 dark:border-mistryblue-400 dark:text-mistryblue-400 dark:hover:bg-gray-700"
+            className="border-blue-500 text-blue-500 hover:bg-blue-50 dark:border-blue-400 dark:text-blue-400 dark:hover:bg-gray-700"
             onClick={handleShare}
           >
-            <Share size={16} className="mr-1" /> Share
+            <Share size={16} className="mr-2" /> 
+            Share
           </Button>
           
           <Button 
             variant="outline"
-            className="border-gray-300 col-span-2 dark:border-gray-600 dark:text-white dark:hover:bg-gray-700"
+            className="border-gray-300 col-span-1 sm:col-span-2 dark:border-gray-600 dark:text-white dark:hover:bg-gray-700"
             onClick={handleExportPdf}
+            disabled={isGeneratingPdf}
           >
-            <FileText size={16} className="mr-1" /> Export PDF
+            {isGeneratingPdf ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <FileText className="mr-2 h-4 w-4" />
+            )}
+            Export PDF
           </Button>
         </div>
         
