@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Share, FileText, Home, Loader2 } from 'lucide-react';
+import { Share, FileText, Home, Loader2, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -59,7 +59,7 @@ const SummaryPage = () => {
     if (isGeneratingPdf) return;
     
     setIsGeneratingPdf(true);
-    const loadingToastResult = toast({
+    const loadingToast = toast({
       title: "Generating PDF",
       description: "Creating professional estimate...",
       duration: Infinity,
@@ -79,11 +79,11 @@ const SummaryPage = () => {
       
       let yPosition = margin;
 
-      // Header with gradient background
+      // Header with professional gradient
       pdf.setFillColor(8, 47, 125);
-      pdf.rect(0, 0, pageWidth, 35, 'F');
+      pdf.rect(0, 0, pageWidth, 40, 'F');
       
-      // Add company logo image
+      // Add company logo
       try {
         const logoImg = new Image();
         logoImg.crossOrigin = 'anonymous';
@@ -94,110 +94,110 @@ const SummaryPage = () => {
         });
         
         if (logoImg.width) {
-          const logoHeight = Math.min(20, (20 * logoImg.height) / logoImg.width);
-          pdf.addImage(logoImg.src, 'PNG', margin, 8, 20, logoHeight);
+          const logoHeight = Math.min(25, (25 * logoImg.height) / logoImg.width);
+          pdf.addImage(logoImg.src, 'PNG', margin, 8, 25, logoHeight);
         }
       } catch (error) {
         console.log('Logo loading failed, using text fallback');
       }
 
-      // Company name and title
+      // Company branding
       pdf.setTextColor(255, 255, 255);
-      pdf.setFontSize(24);
+      pdf.setFontSize(28);
       pdf.setFont('helvetica', 'bold');
-      pdf.text('MistryMate', pageWidth - margin, 15, { align: 'right' });
+      pdf.text('MistryMate', pageWidth - margin, 18, { align: 'right' });
       
-      pdf.setFontSize(12);
+      pdf.setFontSize(11);
       pdf.setFont('helvetica', 'normal');
-      pdf.text('Professional Construction Estimates', pageWidth - margin, 25, { align: 'right' });
+      pdf.text('Professional Construction Estimates', pageWidth - margin, 28, { align: 'right' });
 
-      yPosition = 45;
+      yPosition = 50;
 
-      // Document title with accent line
+      // Document title with enhanced styling
       pdf.setTextColor(8, 47, 125);
-      pdf.setFontSize(20);
+      pdf.setFontSize(24);
       pdf.setFont('helvetica', 'bold');
       pdf.text('PROFESSIONAL ESTIMATE', pageWidth / 2, yPosition, { align: 'center' });
       
-      // Accent line
+      // Decorative line
       pdf.setDrawColor(255, 204, 0);
-      pdf.setLineWidth(2);
-      pdf.line(pageWidth / 2 - 50, yPosition + 5, pageWidth / 2 + 50, yPosition + 5);
+      pdf.setLineWidth(3);
+      pdf.line(pageWidth / 2 - 60, yPosition + 5, pageWidth / 2 + 60, yPosition + 5);
       
-      yPosition += 20;
+      yPosition += 25;
 
-      // Estimate details box with proper color formatting
+      // Project information box
       pdf.setFillColor(248, 250, 252);
-      pdf.rect(margin, yPosition, contentWidth, 55, 'F');
-      pdf.setDrawColor(220, 220, 220);
-      pdf.setLineWidth(0.5);
-      pdf.rect(margin, yPosition, contentWidth, 55, 'S');
+      pdf.rect(margin, yPosition, contentWidth, 60, 'F');
+      pdf.setDrawColor(8, 47, 125);
+      pdf.setLineWidth(1);
+      pdf.rect(margin, yPosition, contentWidth, 60, 'S');
 
-      // Project details - Left column
+      // Left column details
       pdf.setTextColor(60, 60, 60);
       pdf.setFontSize(11);
       pdf.setFont('helvetica', 'bold');
       
-      let detailY = yPosition + 12;
-      pdf.text('Project Title:', margin + 8, detailY);
+      let detailY = yPosition + 15;
+      pdf.text('Project Title:', margin + 10, detailY);
       pdf.setFont('helvetica', 'normal');
-      pdf.text(title || `${estimate.type.charAt(0).toUpperCase() + estimate.type.slice(1)} Estimate`, margin + 45, detailY);
+      pdf.text(title || `${estimate.type.charAt(0).toUpperCase() + estimate.type.slice(1)} Estimate`, margin + 50, detailY);
       
-      detailY += 8;
+      detailY += 10;
       pdf.setFont('helvetica', 'bold');
-      pdf.text('Client Name:', margin + 8, detailY);
+      pdf.text('Client Name:', margin + 10, detailY);
       pdf.setFont('helvetica', 'normal');
-      pdf.text(clientName || 'Not Specified', margin + 45, detailY);
+      pdf.text(clientName || 'Not Specified', margin + 50, detailY);
       
-      detailY += 8;
+      detailY += 10;
       pdf.setFont('helvetica', 'bold');
-      pdf.text('Work Type:', margin + 8, detailY);
+      pdf.text('Work Type:', margin + 10, detailY);
       pdf.setFont('helvetica', 'normal');
-      pdf.text(`${estimate.type.charAt(0).toUpperCase() + estimate.type.slice(1)} Work`, margin + 45, detailY);
+      pdf.text(`${estimate.type.charAt(0).toUpperCase() + estimate.type.slice(1)} Work`, margin + 50, detailY);
 
-      // Project details - Right column
-      detailY = yPosition + 12;
+      // Right column details
+      detailY = yPosition + 15;
       pdf.setFont('helvetica', 'bold');
-      pdf.text('Estimate Date:', margin + 105, detailY);
+      pdf.text('Date:', margin + 110, detailY);
       pdf.setFont('helvetica', 'normal');
-      pdf.text(formatDate(estimate.date), margin + 145, detailY);
+      pdf.text(formatDate(estimate.date), margin + 135, detailY);
       
-      detailY += 8;
+      detailY += 10;
       pdf.setFont('helvetica', 'bold');
-      pdf.text('Total Items:', margin + 105, detailY);
+      pdf.text('Total Items:', margin + 110, detailY);
       pdf.setFont('helvetica', 'normal');
-      pdf.text(`${estimate.items.length} items`, margin + 145, detailY);
+      pdf.text(`${estimate.items.length} items`, margin + 150, detailY);
       
-      detailY += 8;
+      detailY += 10;
       pdf.setFont('helvetica', 'bold');
-      pdf.text('Estimate ID:', margin + 105, detailY);
+      pdf.text('Estimate ID:', margin + 110, detailY);
       pdf.setFont('helvetica', 'normal');
-      pdf.text(`#${estimate.id.slice(0, 8).toUpperCase()}`, margin + 145, detailY);
+      pdf.text(`#${estimate.id.slice(0, 8).toUpperCase()}`, margin + 150, detailY);
 
-      yPosition += 65;
+      yPosition += 70;
 
-      // Items table header
+      // Items table header with professional styling
       pdf.setFillColor(8, 47, 125);
-      pdf.rect(margin, yPosition, contentWidth, 12, 'F');
+      pdf.rect(margin, yPosition, contentWidth, 15, 'F');
       pdf.setTextColor(255, 255, 255);
       pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(10);
+      pdf.setFontSize(11);
       
-      pdf.text('ITEM DESCRIPTION', margin + 5, yPosition + 8);
-      pdf.text('QTY', margin + 120, yPosition + 8);
-      pdf.text('UNIT', margin + 140, yPosition + 8);
-      pdf.text('RATE (₹)', margin + 160, yPosition + 8);
-      pdf.text('AMOUNT (₹)', margin + 180, yPosition + 8, { align: 'right' });
+      pdf.text('DESCRIPTION', margin + 5, yPosition + 10);
+      pdf.text('QTY', margin + 90, yPosition + 10);
+      pdf.text('UNIT', margin + 110, yPosition + 10);
+      pdf.text('RATE (₹)', margin + 130, yPosition + 10);
+      pdf.text('AMOUNT (₹)', margin + 165, yPosition + 10);
 
-      yPosition += 14;
+      yPosition += 17;
 
-      // Items list with alternating row colors
+      // Items list with proper formatting
       pdf.setTextColor(40, 40, 40);
       pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(9);
+      pdf.setFontSize(10);
 
       estimate.items.forEach((item, index) => {
-        if (yPosition > pageHeight - 40) {
+        if (yPosition > pageHeight - 60) {
           pdf.addPage();
           yPosition = margin;
         }
@@ -205,49 +205,58 @@ const SummaryPage = () => {
         // Alternating row background
         if (index % 2 === 0) {
           pdf.setFillColor(248, 250, 252);
-          pdf.rect(margin, yPosition, contentWidth, 10, 'F');
+          pdf.rect(margin, yPosition, contentWidth, 12, 'F');
         }
 
-        const itemName = item.name.length > 35 ? item.name.substring(0, 32) + '...' : item.name;
-        pdf.text(itemName, margin + 5, yPosition + 7);
-        pdf.text(item.quantity.toString(), margin + 120, yPosition + 7);
-        pdf.text(item.unit, margin + 140, yPosition + 7);
-        pdf.text(`₹${item.rate.toFixed(2)}`, margin + 160, yPosition + 7);
-        pdf.text(`₹${item.total.toFixed(2)}`, margin + 180, yPosition + 7, { align: 'right' });
+        const itemName = item.name.length > 30 ? item.name.substring(0, 27) + '...' : item.name;
+        pdf.text(itemName, margin + 5, yPosition + 8);
+        pdf.text(item.quantity.toString(), margin + 90, yPosition + 8);
+        pdf.text(item.unit, margin + 110, yPosition + 8);
+        pdf.text(`₹${item.rate.toLocaleString('en-IN')}`, margin + 130, yPosition + 8);
+        pdf.text(`₹${item.total.toLocaleString('en-IN')}`, margin + 165, yPosition + 8);
 
-        yPosition += 10;
+        yPosition += 12;
       });
 
-      // Total section with enhanced styling
+      // Summary section with enhanced styling
+      yPosition += 10;
+      
+      // Subtotal line
+      pdf.setDrawColor(200, 200, 200);
+      pdf.line(margin + 90, yPosition, pageWidth - margin, yPosition);
       yPosition += 8;
+      
+      // Total section with professional styling
       pdf.setFillColor(8, 47, 125);
-      pdf.rect(margin + 120, yPosition, 80, 15, 'F');
+      pdf.rect(margin + 90, yPosition, contentWidth - 90, 18, 'F');
       
       pdf.setTextColor(255, 255, 255);
       pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(12);
-      pdf.text('TOTAL AMOUNT', margin + 125, yPosition + 10);
       pdf.setFontSize(14);
-      pdf.text(`₹${estimate.total.toFixed(2)}`, margin + 180, yPosition + 10, { align: 'right' });
+      pdf.text('GRAND TOTAL', margin + 95, yPosition + 12);
+      pdf.setFontSize(16);
+      const totalAmount = `₹${estimate.total.toLocaleString('en-IN')}`;
+      pdf.text(totalAmount, pageWidth - margin - 5, yPosition + 12, { align: 'right' });
 
-      // Footer
-      const footerY = pageHeight - 25;
-      pdf.setTextColor(100, 100, 100);
-      pdf.setFontSize(8);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text('This estimate is valid for 30 days from the date of issue.', pageWidth / 2, footerY, { align: 'center' });
-      pdf.text('Terms & Conditions apply. Contact us for any clarifications.', pageWidth / 2, footerY + 5, { align: 'center' });
+      // Professional footer
+      const footerY = pageHeight - 30;
+      pdf.setDrawColor(8, 47, 125);
+      pdf.setLineWidth(1);
+      pdf.line(margin, footerY - 10, pageWidth - margin, footerY - 10);
       
-      pdf.setDrawColor(200, 200, 200);
-      pdf.line(margin, footerY - 5, pageWidth - margin, footerY - 5);
+      pdf.setTextColor(100, 100, 100);
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('This estimate is valid for 30 days from the date of issue. Terms & Conditions apply.', pageWidth / 2, footerY, { align: 'center' });
+      pdf.text('For any queries, please contact us. Thank you for choosing MistryMate!', pageWidth / 2, footerY + 6, { align: 'center' });
 
       // Save PDF
-      const filename = `Estimate_${(title || estimate.type).replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().slice(0, 10)}.pdf`;
+      const filename = `MistryMate_Estimate_${(title || estimate.type).replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().slice(0, 10)}.pdf`;
       pdf.save(filename);
 
       toast({
-        title: "PDF Generated",
-        description: "Professional estimate downloaded successfully",
+        title: "PDF Generated Successfully",
+        description: "Professional estimate downloaded",
       });
     } catch (error) {
       console.error('PDF generation failed:', error);
@@ -258,9 +267,7 @@ const SummaryPage = () => {
       });
     } finally {
       setIsGeneratingPdf(false);
-      if (loadingToastResult?.dismiss) {
-        loadingToastResult.dismiss();
-      }
+      loadingToast.dismiss();
     }
   };
 
@@ -307,13 +314,89 @@ const SummaryPage = () => {
       setIsSaving(false);
     }
   };
-  
+
+  const generateEstimateText = () => {
+    const estimateTitle = title || `${estimate.type.charAt(0).toUpperCase() + estimate.type.slice(1)} Estimate`;
+    const client = clientName || 'Valued Client';
+    
+    let text = `*MistryMate Professional Estimate*\n\n`;
+    text += `📋 *${estimateTitle}*\n`;
+    text += `👤 Client: ${client}\n`;
+    text += `📅 Date: ${formatDate(estimate.date)}\n`;
+    text += `🔧 Work Type: ${estimate.type.charAt(0).toUpperCase() + estimate.type.slice(1)}\n`;
+    text += `📊 Total Items: ${estimate.items.length}\n\n`;
+    
+    text += `*ITEM BREAKDOWN:*\n`;
+    text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+    
+    estimate.items.forEach((item, index) => {
+      text += `${index + 1}. *${item.name}*\n`;
+      text += `   Qty: ${item.quantity} ${item.unit} × ₹${item.rate.toLocaleString('en-IN')}\n`;
+      text += `   Amount: ₹${item.total.toLocaleString('en-IN')}\n\n`;
+    });
+    
+    text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+    text += `💰 *GRAND TOTAL: ₹${estimate.total.toLocaleString('en-IN')}*\n\n`;
+    text += `✅ Valid for 30 days\n`;
+    text += `📞 Contact us for any clarifications\n\n`;
+    text += `*Generated by MistryMate* 🔨`;
+    
+    return text;
+  };
+
   const handleShare = () => {
+    const estimateText = generateEstimateText();
+    const encodedText = encodeURIComponent(estimateText);
+    
+    // Create action buttons
+    const shareOptions = [
+      {
+        name: 'WhatsApp',
+        action: () => {
+          window.open(`https://wa.me/?text=${encodedText}`, '_blank');
+          toast({
+            title: "Opening WhatsApp",
+            description: "Share your estimate via WhatsApp",
+          });
+        }
+      },
+      {
+        name: 'Email',
+        action: () => {
+          const subject = encodeURIComponent(`Estimate: ${title || estimate.type}`);
+          window.open(`mailto:?subject=${subject}&body=${encodedText}`, '_blank');
+          toast({
+            title: "Opening Email",
+            description: "Share your estimate via Email",
+          });
+        }
+      },
+      {
+        name: 'Copy Text',
+        action: () => {
+          navigator.clipboard.writeText(estimateText)
+            .then(() => {
+              toast({
+                title: "Copied to clipboard",
+                description: "Estimate text copied successfully",
+              });
+            })
+            .catch(() => {
+              toast({
+                title: "Copy failed",
+                description: "Could not copy to clipboard",
+                variant: "destructive",
+              });
+            });
+        }
+      }
+    ];
+
+    // Try native share first, fallback to custom options
     if (navigator.share) {
       const shareData = {
         title: title || `${estimate.type.charAt(0).toUpperCase() + estimate.type.slice(1)} Estimate`,
-        text: `MistryMate Estimate: ${title || estimate.type} for ${clientName || 'Client'} - Total: ₹${estimate.total}`,
-        url: window.location.href,
+        text: estimateText,
       };
       
       navigator.share(shareData)
@@ -323,31 +406,13 @@ const SummaryPage = () => {
             description: "Estimate has been shared",
           });
         })
-        .catch((error) => {
-          console.error('Error sharing:', error);
-          toast({
-            title: "Sharing failed",
-            description: "Could not share the estimate",
-            variant: "destructive",
-          });
+        .catch(() => {
+          // Fallback to WhatsApp
+          shareOptions[0].action();
         });
     } else {
-      navigator.clipboard.writeText(
-        `MistryMate Estimate: ${title || estimate.type} for ${clientName || 'Client'} - Total: ₹${estimate.total}`
-      )
-        .then(() => {
-          toast({
-            title: "Copied to clipboard",
-            description: "Estimate details copied to clipboard",
-          });
-        })
-        .catch(() => {
-          toast({
-            title: "Copy failed",
-            description: "Could not copy to clipboard",
-            variant: "destructive",
-          });
-        });
+      // Fallback to WhatsApp for better user experience
+      shareOptions[0].action();
     }
   };
 
@@ -468,11 +533,11 @@ const SummaryPage = () => {
           
           <Button
             variant="outline"
-            className="border-blue-500 text-blue-500 hover:bg-blue-50 dark:border-blue-400 dark:text-blue-400 dark:hover:bg-gray-700"
+            className="border-green-500 text-green-600 hover:bg-green-50 dark:border-green-400 dark:text-green-400 dark:hover:bg-gray-700"
             onClick={handleShare}
           >
             <Share size={16} className="mr-2" /> 
-            Share
+            Share on WhatsApp
           </Button>
           
           <Button 
@@ -486,7 +551,7 @@ const SummaryPage = () => {
             ) : (
               <FileText className="mr-2 h-4 w-4" />
             )}
-            Export PDF
+            Export Professional PDF
           </Button>
         </div>
       </main>
