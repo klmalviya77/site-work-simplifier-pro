@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import LogoImage from '@/components/LogoImage';
-import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveEstimate, Estimate as EstimateType } from '@/services/estimateService';
@@ -147,50 +146,105 @@ const SummaryPage = () => {
   };
   
   const handleExportPdf = async () => {
-    if (!contentRef.current || isGeneratingPdf) return;
+    if (isGeneratingPdf) return;
     
     setIsGeneratingPdf(true);
     const loadingToast = toast({
       title: "Generating PDF",
-      description: "This may take a moment...",
+      description: "Creating professional estimate...",
       duration: Infinity,
     });
 
     try {
-      const content = contentRef.current;
-      const canvas = await html2canvas(content, {
-        scale: 1,
-        useCORS: true,
-        logging: false,
-        ignoreElements: (el) => el.tagName === 'BUTTON',
-      });
-      
+      // Create PDF document
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
       });
 
-      // Dynamic PDF sizing
-      const imgWidth = 210;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      // Add header with logo and company info
+      pdf.setFontSize(20);
+      pdf.setTextColor(0, 105, 208); // Blue color
+      pdf.text('MistryMate', 105, 20, { align: 'center' });
       
-      // Add page if content too long
-      if (imgHeight > 297) {
-        pdf.addPage([210, imgHeight], 'portrait');
-      }
+      pdf.setFontSize(12);
+      pdf.setTextColor(100, 100, 100); // Gray color
+      pdf.text('Professional Site Work Estimates', 105, 27, { align: 'center' });
+      
+      // Add horizontal line
+      pdf.setDrawColor(0, 105, 208);
+      pdf.setLineWidth(0.5);
+      pdf.line(20, 32, 190, 32);
 
-      pdf.addImage(canvas, 'PNG', 0, 0, imgWidth, imgHeight);
-      pdf.save(`${title || estimate.type}_estimate.pdf`);
+      // Add estimate title section
+      pdf.setFontSize(16);
+      pdf.setTextColor(0, 0, 0);
+      pdf.text('ESTIMATE SUMMARY', 105, 42, { align: 'center' });
+
+      // Add estimate details
+      pdf.setFontSize(12);
+      pdf.text(`Estimate Title: ${title || 'Untitled Estimate'}`, 20, 52);
+      pdf.text(`Client Name: ${clientName || 'Not specified'}`, 20, 58);
+      pdf.text(`Date: ${formatDate(estimate.date)}`, 20, 64);
+      pdf.text(`Estimate Type: ${estimate.type.charAt(0).toUpperCase() + estimate.type.slice(1)}`, 20, 70);
+      
+      // Add items table header
+      pdf.setFillColor(240, 240, 240);
+      pdf.rect(20, 80, 170, 10, 'F');
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Item', 25, 87);
+      pdf.text('Qty', 120, 87);
+      pdf.text('Rate', 140, 87);
+      pdf.text('Amount', 170, 87, { align: 'right' });
+
+      // Add items
+      pdf.setFont('helvetica', 'normal');
+      let yPosition = 90;
+      estimate.items.forEach((item, index) => {
+        yPosition += 10;
+        if (yPosition > 270) { // Add new page if running out of space
+          pdf.addPage();
+          yPosition = 20;
+        }
+        
+        pdf.text(item.name, 25, yPosition);
+        pdf.text(`${item.quantity} ${item.unit}`, 120, yPosition);
+        pdf.text(`₹${item.rate}`, 140, yPosition);
+        pdf.text(`₹${item.total}`, 170, yPosition, { align: 'right' });
+        
+        // Add light gray line between items
+        if (index < estimate.items.length - 1) {
+          pdf.setDrawColor(220, 220, 220);
+          pdf.line(20, yPosition + 5, 190, yPosition + 5);
+        }
+      });
+
+      // Add total
+      pdf.setFont('helvetica', 'bold');
+      pdf.setDrawColor(0, 105, 208);
+      pdf.line(140, yPosition + 15, 190, yPosition + 15);
+      pdf.text('Total:', 140, yPosition + 25);
+      pdf.text(`₹${estimate.total}`, 170, yPosition + 25, { align: 'right' });
+
+      // Add footer
+      pdf.setFontSize(10);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text('Thank you for choosing MistryMate', 105, 280, { align: 'center' });
+      pdf.text('Contact: support@mistrymate.com | Phone: +91 9876543210', 105, 285, { align: 'center' });
+
+      // Save PDF
+      pdf.save(`${title || estimate.type}_estimate_${new Date().toISOString().slice(0, 10)}.pdf`);
 
       toast({
-        title: "PDF Ready",
-        description: "Your estimate has been downloaded",
+        title: "PDF Generated",
+        description: "Professional estimate downloaded",
       });
     } catch (error) {
       console.error('PDF generation failed:', error);
       toast({
-        title: "Failed to generate PDF",
-        description: "Please try again",
+        title: "PDF Generation Failed",
+        description: "Could not create PDF",
         variant: "destructive",
       });
     } finally {
