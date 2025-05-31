@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Share, FileText, Home, Loader2 } from 'lucide-react';
@@ -156,95 +157,185 @@ const SummaryPage = () => {
     });
 
     try {
-      // Create PDF document
+      // Create PDF document in A4 format
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
+        format: 'a4',
       });
 
-      // Add header with logo and company info
-      pdf.setFontSize(20);
-      pdf.setTextColor(0, 105, 208); // Blue color
-      pdf.text('MistryMate', 105, 20, { align: 'center' });
+      const pageWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
+      const margin = 20;
+      const contentWidth = pageWidth - (margin * 2);
       
+      let yPosition = margin;
+
+      // Company Header with Logo and Branding
+      pdf.setFillColor(0, 105, 208); // Blue background
+      pdf.rect(0, 0, pageWidth, 40, 'F');
+      
+      // Company Name
+      pdf.setTextColor(255, 255, 255); // White text
+      pdf.setFontSize(24);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('MistryMate', margin, 20);
+      
+      // Tagline
       pdf.setFontSize(12);
-      pdf.setTextColor(100, 100, 100); // Gray color
-      pdf.text('Professional Site Work Estimates', 105, 27, { align: 'center' });
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Professional Site Work Estimates', margin, 28);
       
-      // Add horizontal line
+      // Contact info in header
+      pdf.setFontSize(10);
+      pdf.text('support@mistrymate.com | +91 9876543210', pageWidth - margin, 20, { align: 'right' });
+      pdf.text('www.mistrymate.com', pageWidth - margin, 28, { align: 'right' });
+
+      yPosition = 50;
+
+      // Document Title
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFontSize(18);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('ESTIMATE SUMMARY', pageWidth / 2, yPosition, { align: 'center' });
+      
+      yPosition += 15;
+
+      // Estimate Information Box
+      pdf.setFillColor(248, 249, 250); // Light gray background
+      pdf.rect(margin, yPosition, contentWidth, 40, 'F');
+      pdf.setDrawColor(200, 200, 200);
+      pdf.rect(margin, yPosition, contentWidth, 40, 'S');
+
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(0, 0, 0);
+      
+      // Left column
+      pdf.text('Estimate Details:', margin + 5, yPosition + 8);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`Title: ${title || 'Untitled Estimate'}`, margin + 5, yPosition + 16);
+      pdf.text(`Client: ${clientName || 'Not specified'}`, margin + 5, yPosition + 24);
+      pdf.text(`Type: ${estimate.type.charAt(0).toUpperCase() + estimate.type.slice(1)}`, margin + 5, yPosition + 32);
+      
+      // Right column
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`Date: ${formatDate(estimate.date)}`, margin + 100, yPosition + 16);
+      pdf.text(`Total Items: ${estimate.items.length}`, margin + 100, yPosition + 24);
+      pdf.text(`Estimate ID: ${estimate.id.slice(0, 8)}`, margin + 100, yPosition + 32);
+
+      yPosition += 55;
+
+      // Items Table Header
+      pdf.setFillColor(0, 105, 208);
+      pdf.rect(margin, yPosition, contentWidth, 12, 'F');
+      
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(11);
+      
+      // Table headers
+      pdf.text('Item Description', margin + 3, yPosition + 8);
+      pdf.text('Qty', margin + 100, yPosition + 8);
+      pdf.text('Unit', margin + 120, yPosition + 8);
+      pdf.text('Rate (₹)', margin + 140, yPosition + 8);
+      pdf.text('Amount (₹)', margin + 165, yPosition + 8);
+
+      yPosition += 12;
+
+      // Items Data
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(10);
+
+      estimate.items.forEach((item, index) => {
+        // Check if we need a new page
+        if (yPosition > pageHeight - 60) {
+          pdf.addPage();
+          yPosition = margin;
+          
+          // Repeat header on new page
+          pdf.setFillColor(0, 105, 208);
+          pdf.rect(margin, yPosition, contentWidth, 12, 'F');
+          pdf.setTextColor(255, 255, 255);
+          pdf.setFont('helvetica', 'bold');
+          pdf.setFontSize(11);
+          pdf.text('Item Description', margin + 3, yPosition + 8);
+          pdf.text('Qty', margin + 100, yPosition + 8);
+          pdf.text('Unit', margin + 120, yPosition + 8);
+          pdf.text('Rate (₹)', margin + 140, yPosition + 8);
+          pdf.text('Amount (₹)', margin + 165, yPosition + 8);
+          yPosition += 12;
+          
+          pdf.setTextColor(0, 0, 0);
+          pdf.setFont('helvetica', 'normal');
+          pdf.setFontSize(10);
+        }
+
+        // Alternate row colors
+        if (index % 2 === 1) {
+          pdf.setFillColor(248, 249, 250);
+          pdf.rect(margin, yPosition, contentWidth, 10, 'F');
+        }
+
+        // Draw borders
+        pdf.setDrawColor(220, 220, 220);
+        pdf.rect(margin, yPosition, contentWidth, 10, 'S');
+
+        // Item data
+        const itemName = item.name.length > 35 ? item.name.substring(0, 32) + '...' : item.name;
+        pdf.text(itemName, margin + 3, yPosition + 7);
+        pdf.text(item.quantity.toString(), margin + 100, yPosition + 7);
+        pdf.text(item.unit, margin + 120, yPosition + 7);
+        pdf.text(item.rate.toLocaleString('en-IN'), margin + 140, yPosition + 7);
+        pdf.text(item.total.toLocaleString('en-IN'), margin + 165, yPosition + 7);
+
+        yPosition += 10;
+      });
+
+      // Total Section
+      yPosition += 10;
+      pdf.setFillColor(0, 105, 208);
+      pdf.rect(margin + 120, yPosition, 70, 15, 'F');
+      
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(14);
+      pdf.text('GRAND TOTAL:', margin + 125, yPosition + 7);
+      pdf.text(`₹${estimate.total.toLocaleString('en-IN')}`, margin + 125, yPosition + 12);
+
+      // Footer section
+      yPosition = pageHeight - 40;
+      
+      // Footer line
       pdf.setDrawColor(0, 105, 208);
       pdf.setLineWidth(0.5);
-      pdf.line(20, 32, 190, 32);
-
-      // Add estimate title section
-      pdf.setFontSize(16);
-      pdf.setTextColor(0, 0, 0);
-      pdf.text('ESTIMATE SUMMARY', 105, 42, { align: 'center' });
-
-      // Add estimate details
-      pdf.setFontSize(12);
-      pdf.text(`Estimate Title: ${title || 'Untitled Estimate'}`, 20, 52);
-      pdf.text(`Client Name: ${clientName || 'Not specified'}`, 20, 58);
-      pdf.text(`Date: ${formatDate(estimate.date)}`, 20, 64);
-      pdf.text(`Estimate Type: ${estimate.type.charAt(0).toUpperCase() + estimate.type.slice(1)}`, 20, 70);
+      pdf.line(margin, yPosition, pageWidth - margin, yPosition);
       
-      // Add items table header
-      pdf.setFillColor(240, 240, 240);
-      pdf.rect(20, 80, 170, 10, 'F');
-      pdf.setTextColor(0, 0, 0);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Item', 25, 87);
-      pdf.text('Qty', 120, 87);
-      pdf.text('Rate', 140, 87);
-      pdf.text('Amount', 170, 87, { align: 'right' });
-
-      // Add items
-      pdf.setFont('helvetica', 'normal');
-      let yPosition = 90;
-      estimate.items.forEach((item, index) => {
-        yPosition += 10;
-        if (yPosition > 270) { // Add new page if running out of space
-          pdf.addPage();
-          yPosition = 20;
-        }
-        
-        pdf.text(item.name, 25, yPosition);
-        pdf.text(`${item.quantity} ${item.unit}`, 120, yPosition);
-        pdf.text(`₹${item.rate}`, 140, yPosition);
-        pdf.text(`₹${item.total}`, 170, yPosition, { align: 'right' });
-        
-        // Add light gray line between items
-        if (index < estimate.items.length - 1) {
-          pdf.setDrawColor(220, 220, 220);
-          pdf.line(20, yPosition + 5, 190, yPosition + 5);
-        }
-      });
-
-      // Add total
-      pdf.setFont('helvetica', 'bold');
-      pdf.setDrawColor(0, 105, 208);
-      pdf.line(140, yPosition + 15, 190, yPosition + 15);
-      pdf.text('Total:', 140, yPosition + 25);
-      pdf.text(`₹${estimate.total}`, 170, yPosition + 25, { align: 'right' });
-
-      // Add footer
-      pdf.setFontSize(10);
+      yPosition += 10;
+      
+      // Footer text
       pdf.setTextColor(100, 100, 100);
-      pdf.text('Thank you for choosing MistryMate', 105, 280, { align: 'center' });
-      pdf.text('Contact: support@mistrymate.com | Phone: +91 9876543210', 105, 285, { align: 'center' });
-
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(10);
+      pdf.text('Thank you for choosing MistryMate for your site work estimates.', pageWidth / 2, yPosition, { align: 'center' });
+      pdf.text('This is a digitally generated estimate. For any queries, contact us at support@mistrymate.com', pageWidth / 2, yPosition + 8, { align: 'center' });
+      
+      // Generate filename
+      const filename = `${(title || estimate.type).replace(/[^a-zA-Z0-9]/g, '_')}_estimate_${new Date().toISOString().slice(0, 10)}.pdf`;
+      
       // Save PDF
-      pdf.save(`${title || estimate.type}_estimate_${new Date().toISOString().slice(0, 10)}.pdf`);
+      pdf.save(filename);
 
       toast({
-        title: "PDF Generated",
+        title: "PDF Generated Successfully",
         description: "Professional estimate downloaded",
       });
     } catch (error) {
       console.error('PDF generation failed:', error);
       toast({
         title: "PDF Generation Failed",
-        description: "Could not create PDF",
+        description: "Could not create PDF. Please try again.",
         variant: "destructive",
       });
     } finally {
