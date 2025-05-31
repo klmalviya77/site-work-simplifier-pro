@@ -43,8 +43,8 @@ const SummaryPage = () => {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Company logo URL - replace with your actual logo URL
-  const companyLogoUrl = 'https://example.com/path/to/your/logo.png';
+  // Company logo URL - REPLACE WITH YOUR ACTUAL LOGO URL
+  const companyLogoUrl = 'https://i.postimg.cc/pVggTwHz/file-000000006a5461f5a5e784f197571687.png';
   
   if (!estimate) {
     navigate('/');
@@ -79,28 +79,30 @@ const SummaryPage = () => {
       
       let yPosition = margin;
 
-      // Add company logo
-      if (companyLogoUrl) {
-        try {
-          const logoResponse = await fetch(companyLogoUrl);
-          const logoBlob = await logoResponse.blob();
-          const logoDataUrl = await new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result);
-            reader.readAsDataURL(logoBlob);
-          });
-          
-          pdf.addImage(logoDataUrl as string, 'PNG', margin, 10, 30, 30);
-          yPosition += 35;
-        } catch (error) {
-          console.error('Error loading logo:', error);
-          // Fallback to text if logo fails
-          pdf.setFontSize(24);
-          pdf.setTextColor(8, 47, 125);
-          pdf.setFont('helvetica', 'bold');
-          pdf.text('MistryMate', margin, 25);
-          yPosition += 15;
+      // Add company logo image
+      try {
+        const logoImg = new Image();
+        logoImg.src = companyLogoUrl;
+        await new Promise((resolve) => {
+          logoImg.onload = resolve;
+          logoImg.onerror = resolve; // Continue even if image fails
+        });
+        
+        if (logoImg.width) {
+          // Calculate dimensions to maintain aspect ratio
+          const logoHeight = Math.min(30, (30 * logoImg.height) / logoImg.width);
+          pdf.addImage(logoImg.src, 'PNG', margin, yPosition, 30, logoHeight);
+          yPosition += logoHeight + 10;
+        } else {
+          throw new Error('Logo failed to load');
         }
+      } catch (error) {
+        // Fallback to text if logo fails
+        pdf.setFontSize(20);
+        pdf.setTextColor(8, 47, 125);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('MistryMate', margin, yPosition + 10);
+        yPosition += 15;
       }
 
       // Document title
@@ -118,9 +120,9 @@ const SummaryPage = () => {
 
       // Estimate info box
       pdf.setFillColor(248, 250, 252);
-      pdf.rect(margin, yPosition, contentWidth, 40, 'F');
+      pdf.rect(margin, yPosition, contentWidth, 45, 'F');
       pdf.setDrawColor(200, 200, 200);
-      pdf.rect(margin, yPosition, contentWidth, 40, 'S');
+      pdf.rect(margin, yPosition, contentWidth, 45, 'S');
 
       // Left column
       pdf.setFontSize(10);
@@ -156,7 +158,7 @@ const SummaryPage = () => {
       pdf.setFont('helvetica', 'normal');
       pdf.text(`#${estimate.id.slice(0, 8).toUpperCase()}`, margin + 145, yPosition + 26);
 
-      yPosition += 45;
+      yPosition += 50;
 
       // Items table header
       pdf.setFillColor(8, 47, 125);
@@ -183,7 +185,7 @@ const SummaryPage = () => {
           yPosition = margin;
         }
 
-        pdf.setFillColor(index % 2 === 0 ? 248, 250, 252 : 255, 255, 255);
+        pdf.setFillColor(index % 2 === 0 ? [248, 250, 252] : [255, 255, 255]);
         pdf.rect(margin, yPosition, contentWidth, 8, 'F');
 
         pdf.text(item.name.length > 40 ? item.name.substring(0, 37) + '...' : item.name, margin + 5, yPosition + 6);
@@ -225,12 +227,103 @@ const SummaryPage = () => {
     }
   };
 
-  // Rest of your component code remains the same...
-  // (handleSaveFinal, handleShare, formatDate, and JSX return)
+  const handleSaveFinal = async () => {
+    setIsSaving(true);
+    try {
+      const finalEstimate: EstimateType = {
+        ...estimate,
+        title: title || `${estimate.type.charAt(0).toUpperCase() + estimate.type.slice(1)} Estimate`,
+        clientName,
+        isFinal: true,
+      };
+      
+      if (user && !user.isGuest) {
+        await saveEstimate(finalEstimate, user.id);
+      } else {
+        await saveEstimate(finalEstimate);
+      }
+      
+      const savedEstimates = JSON.parse(localStorage.getItem('mistryMateEstimates') || '[]');
+      const existingIndex = savedEstimates.findIndex((e: EstimateType) => e.id === estimate.id);
+      if (existingIndex >= 0) {
+        savedEstimates[existingIndex] = finalEstimate;
+      } else {
+        savedEstimates.push(finalEstimate);
+      }
+      
+      localStorage.setItem('mistryMateEstimates', JSON.stringify(savedEstimates));
+      
+      toast({
+        title: "Estimate finalized",
+        description: "Your estimate has been saved",
+      });
+      
+      navigate('/saved');
+    } catch (error) {
+      console.error('Save failed:', error);
+      toast({
+        title: "Save failed",
+        description: error instanceof Error ? error.message : "Could not save estimate",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+  
+  const handleShare = () => {
+    if (navigator.share) {
+      const shareData = {
+        title: title || `${estimate.type.charAt(0).toUpperCase() + estimate.type.slice(1)} Estimate`,
+        text: `MistryMate Estimate: ${title || estimate.type} for ${clientName || 'Client'} - Total: ₹${estimate.total}`,
+        url: window.location.href,
+      };
+      
+      navigator.share(shareData)
+        .then(() => {
+          toast({
+            title: "Shared successfully",
+            description: "Estimate has been shared",
+          });
+        })
+        .catch((error) => {
+          console.error('Error sharing:', error);
+          toast({
+            title: "Sharing failed",
+            description: "Could not share the estimate",
+            variant: "destructive",
+          });
+        });
+    } else {
+      navigator.clipboard.writeText(
+        `MistryMate Estimate: ${title || estimate.type} for ${clientName || 'Client'} - Total: ₹${estimate.total}`
+      )
+        .then(() => {
+          toast({
+            title: "Copied to clipboard",
+            description: "Estimate details copied to clipboard",
+          });
+        })
+        .catch(() => {
+          toast({
+            title: "Copy failed",
+            description: "Could not copy to clipboard",
+            variant: "destructive",
+          });
+        });
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-6">
-      {/* Header */}
       <header className="bg-blue-600 dark:bg-blue-800 text-white p-4">
         <div className="flex justify-between items-center">
           <h1 className="text-xl font-bold">Estimate Summary</h1>
@@ -244,7 +337,6 @@ const SummaryPage = () => {
         </div>
       </header>
       
-      {/* Main Content */}
       <main className="p-4 max-w-lg mx-auto">
         <div ref={contentRef}>
           <Card className="mb-4 dark:bg-gray-800 dark:border-gray-700">
