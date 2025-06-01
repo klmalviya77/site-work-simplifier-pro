@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FileText, Trash2, Search, CloudOff, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -17,6 +16,16 @@ import {
   Estimate
 } from '@/services/estimateService';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const SavedEstimatesPage = () => {
   const navigate = useNavigate();
@@ -28,19 +37,45 @@ const SavedEstimatesPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [estimateToDelete, setEstimateToDelete] = useState<string | null>(null);
   
+  // Network status effect
   useEffect(() => {
-    // Listen for online/offline events
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
     
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
     
-    // Load estimates on first render
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Load estimates with memoization
+  const loadEstimates = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const loadedEstimates = await getEstimates(user?.id);
+      setEstimates(loadedEstimates);
+    } catch (error) {
+      console.error("Failed to load estimates:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load estimates",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user?.id, toast]);
+
+  // Initial load and realtime subscription
+  useEffect(() => {
     loadEstimates();
     
-    // If authenticated, subscribe to changes
     if (user && !user.isGuest) {
       const channel = supabase
         .channel('estimate-changes')
@@ -50,104 +85,121 @@ const SavedEstimatesPage = () => {
           table: 'estimates',
           filter: `user_id=eq.${user.id}`
         }, () => {
-          // Reload estimates when changes happen
           loadEstimates();
         })
         .subscribe();
         
       return () => {
-        window.removeEventListener('online', handleOnline);
-        window.removeEventListener('offline', handleOffline);
         supabase.removeChannel(channel);
       };
     }
-    
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, [user]);
-  
-  const loadEstimates = async () => {
-    setIsLoading(true);
-    // Load estimates from both local storage and Supabase if logged in
-    const loadedEstimates = await getEstimates(user?.id);
-    setEstimates(loadedEstimates);
-    setIsLoading(false);
-  };
-  
+  }, [user, loadEstimates]);
+
   const handleSyncEstimates = async () => {
     if (!user || user.isGuest || !isOnline) return;
     
     setIsSyncing(true);
-    await syncPendingEstimates(user.id);
-    await loadEstimates();
-    
-    toast({
-      title: "Sync completed",
-      description: "Your estimates have been synchronized",
-    });
-    
-    setIsSyncing(false);
+    try {
+      await syncPendingEstimates(user.id);
+      await loadEstimates();
+      toast({
+        title: "Sync completed",
+        description: "Your estimates have been synchronized",
+      });
+    } catch (error) {
+      console.error("Sync failed:", error);
+      toast({
+        title: "Sync failed",
+        description: "Could not synchronize estimates",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSyncing(false);
+    }
   };
-  
-  const handleDeleteEstimate = async (id: string) => {
-    // Remove from local state
-    const newEstimates = estimates.filter(estimate => estimate.id !== id);
-    setEstimates(newEstimates);
+
+  const confirmDelete = (id: string) => {
+    setEstimateToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteEstimate = async () => {
+    if (!estimateToDelete) return;
     
-    // Update localStorage
-    localStorage.setItem('mistryMateEstimates', JSON.stringify(newEstimates));
+    const id = estimateToDelete;
+    setDeleteDialogOpen(false);
     
-    // Mark as deleted locally to prevent it from reappearing
-    markEstimateAsDeleted(id);
-    
-    // If the user is logged in and online, delete from Supabase
-    if (user && !user.isGuest && isOnline) {
-      try {
+    try {
+      // Optimistic update
+      setEstimates(prev => prev.filter(estimate => estimate.id !== id));
+      
+      // Update localStorage
+      const updatedEstimates = estimates.filter(estimate => estimate.id !== id);
+      localStorage.setItem('mistryMateEstimates', JSON.stringify(updatedEstimates));
+      
+      // Mark as deleted locally
+      markEstimateAsDeleted(id);
+      
+      // If authenticated and online, delete from Supabase
+      if (user && !user.isGuest && isOnline) {
         const { error } = await supabase
           .from('estimates')
           .delete()
           .eq('id', id)
           .eq('user_id', user.id);
           
-        if (error) {
-          console.error("Error deleting from Supabase:", error);
-        } else {
-          // Successfully deleted from Supabase, remove from deleted tracking
-          removeFromDeletedList(id);
-        }
-      } catch (error) {
-        console.error("Failed to delete from Supabase:", error);
+        if (error) throw error;
+        
+        // Successfully deleted from Supabase, remove from deleted tracking
+        removeFromDeletedList(id);
       }
+      
+      toast({
+        title: "Estimate deleted",
+        description: "The estimate has been removed",
+      });
+    } catch (error) {
+      console.error("Delete failed:", error);
+      // Revert optimistic update if failed
+      loadEstimates();
+      toast({
+        title: "Delete failed",
+        description: "Could not delete the estimate",
+        variant: "destructive",
+      });
+    } finally {
+      setEstimateToDelete(null);
     }
-    
-    toast({
-      title: "Estimate deleted",
-      description: "The estimate has been removed",
-    });
   };
-  
+
   const handleViewEstimate = (estimate: Estimate) => {
-    // Navigate to summary page with estimate data
     navigate('/summary', { state: { estimate } });
   };
-  
+
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-IN', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
+    try {
+      return new Date(dateString).toLocaleDateString('en-IN', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      });
+    } catch {
+      return 'Invalid date';
+    }
   };
-  
-  const filteredEstimates = searchQuery.trim() === ''
-    ? estimates
-    : estimates.filter(estimate => 
-        (estimate.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-         estimate.clientName?.toLowerCase().includes(searchQuery.toLowerCase()))
-      );
-  
+
+  const filteredEstimates = estimates.filter(estimate => {
+    if (searchQuery.trim() === '') return true;
+    
+    const query = searchQuery.toLowerCase();
+    return (
+      estimate.title?.toLowerCase().includes(query) ||
+      estimate.clientName?.toLowerCase().includes(query) ||
+      estimate.type.toLowerCase().includes(query) ||
+      estimate.total.toString().includes(query)
+    );
+  });
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* Header */}
@@ -165,10 +217,10 @@ const SavedEstimatesPage = () => {
               variant="outline"
               className="bg-white text-mistryblue-500 border-white"
               onClick={handleSyncEstimates}
-              disabled={isSyncing}
+              disabled={isSyncing || isLoading}
             >
               <RefreshCw size={14} className={`mr-1 ${isSyncing ? 'animate-spin' : ''}`} /> 
-              Sync
+              {isSyncing ? 'Syncing...' : 'Sync'}
             </Button>
           )}
         </div>
@@ -180,7 +232,7 @@ const SavedEstimatesPage = () => {
         <div className="relative mb-4">
           <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
           <Input
-            placeholder="Search estimates..."
+            placeholder="Search estimates by title, client, type or amount..."
             className="pl-9"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -196,10 +248,10 @@ const SavedEstimatesPage = () => {
         ) : filteredEstimates.length > 0 ? (
           <div className="space-y-3 mb-6">
             {filteredEstimates.map((estimate) => (
-              <Card key={estimate.id} className="p-4">
+              <Card key={estimate.id} className="p-4 hover:shadow-md transition-shadow">
                 <div className="flex items-center justify-between mb-2">
-                  <div>
-                    <h3 className="font-medium">
+                  <div className="max-w-[70%]">
+                    <h3 className="font-medium truncate">
                       {estimate.title || `${estimate.type.charAt(0).toUpperCase() + estimate.type.slice(1)} Estimate`}
                     </h3>
                     <p className="text-sm text-gray-500">
@@ -210,21 +262,25 @@ const SavedEstimatesPage = () => {
                     {estimate.syncStatus === 'pending' && (
                       <span className="mr-2 w-2 h-2 bg-amber-500 rounded-full" title="Pending sync"></span>
                     )}
-                    <div className={`capitalize px-2 py-1 rounded text-xs ${estimate.type === 'electrical' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                    <div className={`capitalize px-2 py-1 rounded text-xs ${
+                      estimate.type === 'electrical' ? 'bg-blue-100 text-blue-800' : 
+                      estimate.type === 'plumbing' ? 'bg-green-100 text-green-800' :
+                      'bg-yellow-100 text-yellow-800'
+                    }`}>
                       {estimate.type}
                     </div>
                   </div>
                 </div>
                 
                 <div className="flex justify-between text-sm mb-3">
-                  <span>
+                  <span className="truncate max-w-[60%]">
                     {estimate.clientName ? (
                       <>Client: <span className="font-medium">{estimate.clientName}</span></>
                     ) : (
                       <span className="text-gray-500">No client specified</span>
                     )}
                   </span>
-                  <span className="font-medium">₹{estimate.total}</span>
+                  <span className="font-medium">₹{estimate.total.toLocaleString('en-IN')}</span>
                 </div>
                 
                 <div className="flex justify-between">
@@ -240,14 +296,28 @@ const SavedEstimatesPage = () => {
                   <Button 
                     variant="ghost" 
                     size="sm"
-                    className="text-red-500"
-                    onClick={() => handleDeleteEstimate(estimate.id)}
+                    className="text-red-500 hover:bg-red-50"
+                    onClick={() => confirmDelete(estimate.id)}
                   >
                     <Trash2 size={14} className="mr-1" /> Delete
                   </Button>
                 </div>
               </Card>
             ))}
+          </div>
+        ) : searchQuery ? (
+          <div className="text-center py-12 bg-white border border-dashed border-gray-300 rounded-lg">
+            <Search className="mx-auto text-gray-400 h-12 w-12 mb-3" />
+            <h3 className="font-medium text-gray-700 mb-1">No Matching Estimates</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              No estimates found for "{searchQuery}"
+            </p>
+            <Button 
+              variant="outline"
+              onClick={() => setSearchQuery('')}
+            >
+              Clear Search
+            </Button>
           </div>
         ) : (
           <div className="text-center py-12 bg-white border border-dashed border-gray-300 rounded-lg">
@@ -265,6 +335,27 @@ const SavedEstimatesPage = () => {
           </div>
         )}
       </main>
+      
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the estimate.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              className="bg-red-500 hover:bg-red-600"
+              onClick={handleDeleteEstimate}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       
       {/* Bottom Navigation */}
       <Navigation />
