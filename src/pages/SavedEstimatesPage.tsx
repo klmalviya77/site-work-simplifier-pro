@@ -1,351 +1,136 @@
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, Trash2, Search, CloudOff, RefreshCw } from 'lucide-react';
+import { Plus, FileText, Calendar, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import Navigation from '@/components/Navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import { 
-  getEstimates, 
-  saveEstimateToLocalStorage, 
-  syncPendingEstimates,
-  markEstimateAsDeleted,
-  removeFromDeletedList,
-  Estimate
-} from '@/services/estimateService';
-import { supabase } from '@/integrations/supabase/client';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import LogoImage from '@/components/LogoImage';
 
 const SavedEstimatesPage = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const { user } = useAuth();
   
-  const [estimates, setEstimates] = useState<Estimate[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [estimateToDelete, setEstimateToDelete] = useState<string | null>(null);
-  const realtimeSubscription = useRef<any>(null);
+  // Mock data for saved estimates
+  const savedEstimates = [
+    {
+      id: 1,
+      title: 'Kitchen Electrical Work',
+      type: 'electrical',
+      date: '2024-05-15',
+      total: 1250.00,
+      status: 'draft'
+    },
+    {
+      id: 2,
+      title: 'Bathroom Plumbing',
+      type: 'plumbing',
+      date: '2024-05-12',
+      total: 890.50,
+      status: 'sent'
+    },
+    {
+      id: 3,
+      title: 'Office Lighting Upgrade',
+      type: 'electrical',
+      date: '2024-05-10',
+      total: 2100.75,
+      status: 'approved'
+    }
+  ];
   
-  useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
-
-  const loadEstimates = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const loadedEstimates = await getEstimates(user?.id);
-      setEstimates(loadedEstimates);
-    } catch (error) {
-      console.error("Failed to load estimates:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load estimates",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user?.id, toast]);
-
-  const setupRealtimeSubscription = useCallback(() => {
-    if (realtimeSubscription.current) {
-      supabase.removeChannel(realtimeSubscription.current);
-    }
-    
-    if (user && !user.isGuest) {
-      realtimeSubscription.current = supabase
-        .channel('estimate-changes')
-        .on('postgres_changes', { 
-          event: '*', 
-          schema: 'public', 
-          table: 'estimates',
-          filter: `user_id=eq.${user.id}`
-        }, async (payload) => {
-          // Skip if this is our own delete operation
-          if (payload.eventType === 'DELETE' && payload.old.id === estimateToDelete) {
-            return;
-          }
-          await loadEstimates();
-        })
-        .subscribe();
-    }
-  }, [user, loadEstimates, estimateToDelete]);
-
-  useEffect(() => {
-    loadEstimates();
-    setupRealtimeSubscription();
-    
-    return () => {
-      if (realtimeSubscription.current) {
-        supabase.removeChannel(realtimeSubscription.current);
-      }
-    };
-  }, [loadEstimates, setupRealtimeSubscription]);
-
-  const handleSyncEstimates = async () => {
-    if (!user || user.isGuest || !isOnline) return;
-    
-    setIsSyncing(true);
-    try {
-      await syncPendingEstimates(user.id);
-      await loadEstimates();
-      toast({
-        title: "Sync completed",
-        description: "Your estimates have been synchronized",
-      });
-    } catch (error) {
-      console.error("Sync failed:", error);
-      toast({
-        title: "Sync failed",
-        description: "Could not synchronize estimates",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSyncing(false);
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'draft': return 'text-yellow-600 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-900/30';
+      case 'sent': return 'text-blue-600 bg-blue-100 dark:text-blue-400 dark:bg-blue-900/30';
+      case 'approved': return 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/30';
+      default: return 'text-gray-600 bg-gray-100 dark:text-gray-400 dark:bg-gray-900/30';
     }
   };
-
-  const confirmDelete = (id: string) => {
-    setEstimateToDelete(id);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleDeleteEstimate = async () => {
-    if (!estimateToDelete) return;
-    
-    const id = estimateToDelete;
-    setDeleteDialogOpen(false);
-    
-    try {
-      // Temporarily unsubscribe from realtime updates
-      if (realtimeSubscription.current) {
-        supabase.removeChannel(realtimeSubscription.current);
-      }
-      
-      // Optimistic update
-      setEstimates(prev => prev.filter(estimate => estimate.id !== id));
-      
-      // Update localStorage
-      const updatedEstimates = estimates.filter(estimate => estimate.id !== id);
-      localStorage.setItem('mistryMateEstimates', JSON.stringify(updatedEstimates));
-      
-      // Mark as deleted locally
-      markEstimateAsDeleted(id);
-      
-      // If authenticated and online, delete from Supabase
-      if (user && !user.isGuest && isOnline) {
-        const { error } = await supabase
-          .from('estimates')
-          .delete()
-          .eq('id', id)
-          .eq('user_id', user.id);
-          
-        if (error) throw error;
-        
-        // Successfully deleted from Supabase, remove from deleted tracking
-        removeFromDeletedList(id);
-      }
-      
-      toast({
-        title: "Estimate deleted",
-        description: "The estimate has been removed",
-      });
-    } catch (error) {
-      console.error("Delete failed:", error);
-      // Revert optimistic update if failed
-      await loadEstimates();
-      toast({
-        title: "Delete failed",
-        description: "Could not delete the estimate",
-        variant: "destructive",
-      });
-    } finally {
-      setEstimateToDelete(null);
-      // Resubscribe to realtime updates
-      if (user && !user.isGuest) {
-        setupRealtimeSubscription();
-      }
-    }
-  };
-
-  const handleViewEstimate = (estimate: Estimate) => {
-    navigate('/summary', { state: { estimate } });
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-IN', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
-
-  const filteredEstimates = searchQuery.trim() === ''
-    ? estimates
-    : estimates.filter(estimate => 
-        (estimate.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-         estimate.clientName?.toLowerCase().includes(searchQuery.toLowerCase()))
-      );
-
+  
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      <header className="bg-mistryblue-500 text-white p-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
+      {/* Header */}
+      <header className="bg-mistryblue-500 dark:bg-mistryblue-600 text-white p-4 shadow-md">
         <div className="flex justify-between items-center">
-          <h1 className="text-xl font-bold">Saved Estimates</h1>
-          {!isOnline && (
-            <div className="flex items-center text-xs bg-amber-500 px-2 py-1 rounded">
-              <CloudOff size={14} className="mr-1" /> Offline Mode
-            </div>
-          )}
-          {isOnline && user && !user.isGuest && (
-            <Button 
-              size="sm" 
-              variant="outline"
-              className="bg-white text-mistryblue-500 border-white"
-              onClick={handleSyncEstimates}
-              disabled={isSyncing}
-            >
-              <RefreshCw size={14} className={`mr-1 ${isSyncing ? 'animate-spin' : ''}`} /> 
-              Sync
-            </Button>
-          )}
+          <LogoImage size="small" />
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => navigate('/create-estimate')}
+            className="bg-white text-mistryblue-500 hover:bg-gray-100"
+          >
+            <Plus size={16} className="mr-1" />
+            New
+          </Button>
         </div>
       </header>
       
+      {/* Main Content */}
       <main className="p-4 max-w-lg mx-auto">
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Search estimates..."
-            className="pl-9"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold mb-2 dark:text-white">Saved Estimates</h1>
+          <p className="text-gray-600 dark:text-gray-300">
+            Manage your saved estimates and proposals
+          </p>
         </div>
         
-        {isLoading ? (
-          <div className="text-center py-8">
-            <div className="animate-spin w-6 h-6 border-2 border-mistryblue-500 border-t-transparent rounded-full mx-auto mb-2"></div>
-            <p className="text-gray-500">Loading estimates...</p>
-          </div>
-        ) : filteredEstimates.length > 0 ? (
-          <div className="space-y-3 mb-6">
-            {filteredEstimates.map((estimate) => (
-              <Card key={estimate.id} className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div>
-                    <h3 className="font-medium">
-                      {estimate.title || `${estimate.type.charAt(0).toUpperCase() + estimate.type.slice(1)} Estimate`}
-                    </h3>
-                    <p className="text-sm text-gray-500">
-                      {formatDate(estimate.date)}
-                    </p>
+        {savedEstimates.length === 0 ? (
+          <Card className="dark:bg-gray-800 dark:border-gray-700">
+            <CardContent className="text-center py-12">
+              <FileText size={48} className="mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-medium mb-2 dark:text-white">No Estimates Yet</h3>
+              <p className="text-gray-600 dark:text-gray-300 mb-4">
+                Create your first estimate to get started
+              </p>
+              <Button
+                onClick={() => navigate('/create-estimate')}
+                className="bg-mistryblue-500 hover:bg-mistryblue-600 dark:bg-mistryblue-600 dark:hover:bg-mistryblue-700"
+              >
+                <Plus size={16} className="mr-2" />
+                Create Estimate
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {savedEstimates.map((estimate) => (
+              <Card 
+                key={estimate.id} 
+                className="cursor-pointer hover:shadow-md transition-shadow dark:bg-gray-800 dark:border-gray-700"
+                onClick={() => navigate(`/estimate/${estimate.id}`)}
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex justify-between items-start">
+                    <CardTitle className="text-lg dark:text-white">
+                      {estimate.title}
+                    </CardTitle>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${getStatusColor(estimate.status)}`}>
+                      {estimate.status}
+                    </span>
                   </div>
-                  <div className="flex items-center">
-                    {estimate.syncStatus === 'pending' && (
-                      <span className="mr-2 w-2 h-2 bg-amber-500 rounded-full" title="Pending sync"></span>
-                    )}
-                    <div className={`capitalize px-2 py-1 rounded text-xs ${estimate.type === 'electrical' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                      {estimate.type}
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="flex justify-between items-center text-sm text-gray-600 dark:text-gray-300">
+                    <div className="flex items-center">
+                      <Calendar size={14} className="mr-1" />
+                      {new Date(estimate.date).toLocaleDateString()}
+                    </div>
+                    <div className="flex items-center font-medium">
+                      <DollarSign size={14} className="mr-1" />
+                      {estimate.total.toLocaleString('en-US', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                      })}
                     </div>
                   </div>
-                </div>
-                
-                <div className="flex justify-between text-sm mb-3">
-                  <span>
-                    {estimate.clientName ? (
-                      <>Client: <span className="font-medium">{estimate.clientName}</span></>
-                    ) : (
-                      <span className="text-gray-500">No client specified</span>
-                    )}
-                  </span>
-                  <span className="font-medium">₹{estimate.total}</span>
-                </div>
-                
-                <div className="flex justify-between">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className="text-mistryblue-500 border-mistryblue-500"
-                    onClick={() => handleViewEstimate(estimate)}
-                  >
-                    <FileText size={14} className="mr-1" /> View
-                  </Button>
-                  
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    className="text-red-500"
-                    onClick={() => confirmDelete(estimate.id)}
-                  >
-                    <Trash2 size={14} className="mr-1" /> Delete
-                  </Button>
-                </div>
+                </CardContent>
               </Card>
             ))}
-          </div>
-        ) : (
-          <div className="text-center py-12 bg-white border border-dashed border-gray-300 rounded-lg">
-            <FileText className="mx-auto text-gray-400 h-12 w-12 mb-3" />
-            <h3 className="font-medium text-gray-700 mb-1">No Saved Estimates</h3>
-            <p className="text-sm text-gray-500 mb-4">
-              Your saved estimates will appear here
-            </p>
-            <Button 
-              className="bg-mistryblue-500 hover:bg-mistryblue-600"
-              onClick={() => navigate('/')}
-            >
-              Create New Estimate
-            </Button>
           </div>
         )}
       </main>
       
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the estimate.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              className="bg-red-500 hover:bg-red-600"
-              onClick={handleDeleteEstimate}
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      
+      {/* Bottom Navigation */}
       <Navigation />
     </div>
   );

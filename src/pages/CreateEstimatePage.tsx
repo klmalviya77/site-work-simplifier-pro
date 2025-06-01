@@ -1,190 +1,68 @@
 
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Plug, HardHat } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import Navigation from '@/components/Navigation';
-import { useToast } from '@/hooks/use-toast';
-import MaterialSelector from '@/components/estimate/MaterialSelector';
+import { ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import EstimateForm from '@/components/estimate/EstimateForm';
-import EstimateItemsList, { EstimateItem } from '@/components/estimate/EstimateItemsList';
-import materialSuggestions, { Material } from '@/data/materialSuggestions';
-import { saveEstimate } from '@/services/estimateService';
-import { useAuth } from '@/contexts/AuthContext';
-
-// Properly generate a valid UUID v4
-const generateUUID = (): string => {
-  return crypto.randomUUID();
-};
+import Navigation from '@/components/Navigation';
+import LogoImage from '@/components/LogoImage';
 
 const CreateEstimatePage = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const { user } = useAuth();
+  const estimateType = location.state?.estimateType || 'electrical';
   
-  // Get estimate type from state or default to electrical
-  const initialType = location.state?.estimateType || 'electrical';
-  const [estimateType, setEstimateType] = useState<'electrical' | 'plumbing'>(initialType);
+  const [currentStep, setCurrentStep] = useState(1);
+  const totalSteps = 3;
   
-  const [items, setItems] = useState<EstimateItem[]>([]);
-  const [newItem, setNewItem] = useState({
-    name: '',
-    category: '',
-    quantity: 1,
-    unit: 'pcs',
-    rate: 0,
-  });
-  
-  const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
-  const [quantity, setQuantity] = useState<number>(1);
-  const [rate, setRate] = useState<number>(0);
-  
-  const handleMaterialSelect = (material: Material) => {
-    setSelectedMaterial(material);
-    setRate(material.rate);
-    setNewItem({
-      ...newItem,
-      name: material.name,
-      category: material.category,
-      rate: material.rate,
-      unit: material.unit
-    });
-  };
-  
-  const handleAddItem = () => {
-    if (!selectedMaterial || quantity <= 0 || rate < 0) {
-      toast({
-        title: "Invalid input",
-        description: "Please select a material and provide valid quantity and rate",
-        variant: "destructive",
-      });
-      return;
+  const handleBack = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    } else {
+      navigate('/');
     }
-    
-    const newEstimateItem: EstimateItem = {
-      id: generateUUID(),
-      name: selectedMaterial.name,
-      category: selectedMaterial.category,
-      quantity: quantity,
-      unit: selectedMaterial.unit,
-      rate: rate,
-      total: quantity * rate,
-    };
-    
-    setItems([...items, newEstimateItem]);
-    
-    // Reset fields
-    setSelectedMaterial(null);
-    setQuantity(1);
-    setRate(0);
-    setNewItem({
-      name: '',
-      category: '',
-      quantity: 1,
-      unit: 'pcs',
-      rate: 0,
-    });
-    
-    toast({
-      title: "Item added",
-      description: `${newEstimateItem.name} added to estimate`,
-    });
-  };
-  
-  const handleRemoveItem = (id: string) => {
-    setItems(items.filter(item => item.id !== id));
-  };
-  
-  const handleSaveEstimate = async () => {
-    if (items.length === 0) {
-      toast({
-        title: "Cannot save empty estimate",
-        description: "Please add at least one item",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // Calculate total
-    const total = items.reduce((sum, item) => sum + item.total, 0);
-    
-    // Create estimate object with proper UUID
-    const estimate = {
-      id: generateUUID(),
-      type: estimateType,
-      items,
-      total,
-      date: new Date().toISOString(),
-    };
-    
-    // Save to Supabase if user is logged in, otherwise save to localStorage
-    const savedToSupabase = user && !user.isGuest ? 
-      await saveEstimate(estimate, user.id) : 
-      await saveEstimate(estimate);
-
-    // In a real app, save to backend
-    // For now, save to localStorage (This is kept for backward compatibility)
-    const savedEstimates = JSON.parse(localStorage.getItem('mistryMateEstimates') || '[]');
-    localStorage.setItem('mistryMateEstimates', JSON.stringify([...savedEstimates, estimate]));
-    
-    toast({
-      title: "Estimate saved",
-      description: `${estimateType} estimate with ${items.length} items saved`,
-    });
-    
-    navigate('/summary', { state: { estimate } });
   };
   
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
       {/* Header */}
-      <header className="bg-mistryblue-500 text-white p-4">
-        <div className="flex justify-between items-center">
-          <h1 className="text-xl font-bold">{estimateType.charAt(0).toUpperCase() + estimateType.slice(1)} Estimator</h1>
+      <header className="bg-mistryblue-500 dark:bg-mistryblue-600 text-white p-4 shadow-md">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleBack}
+              className="text-white hover:bg-white/10 mr-3 p-2"
+            >
+              <ArrowLeft size={20} />
+            </Button>
+            <LogoImage size="small" />
+          </div>
+          <div className="text-sm">
+            Step {currentStep} of {totalSteps}
+          </div>
         </div>
       </header>
       
       {/* Main Content */}
       <main className="p-4 max-w-lg mx-auto">
-        <Tabs 
-          value={estimateType} 
-          onValueChange={(value) => setEstimateType(value as 'electrical' | 'plumbing')}
-          className="mb-6"
-        >
-          <TabsList className="grid grid-cols-2 mb-4 w-full">
-            <TabsTrigger value="electrical" className="flex items-center gap-2">
-              <Plug size={16} /> Electrical
-            </TabsTrigger>
-            <TabsTrigger value="plumbing" className="flex items-center gap-2">
-              <HardHat size={16} /> Plumbing
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-        
-        {/* Material Selection */}
-        <MaterialSelector
-          materials={materialSuggestions[estimateType]}
-          selectedMaterial={selectedMaterial}
-          onMaterialSelect={handleMaterialSelect}
-        />
-        
-        {/* Estimate Form (Quantity and Rate) */}
-        <EstimateForm
-          selectedMaterial={selectedMaterial?.name || ''}
-          quantity={quantity}
-          rate={rate}
-          onQuantityChange={setQuantity}
-          onRateChange={setRate}
-          onAddItem={handleAddItem}
-        />
-        
-        {/* Added Items List */}
-        <EstimateItemsList
-          items={items}
-          onRemoveItem={handleRemoveItem}
-          onSaveEstimate={handleSaveEstimate}
-        />
+        <Card className="dark:bg-gray-800 dark:border-gray-700">
+          <CardHeader>
+            <CardTitle className="capitalize dark:text-white">
+              {estimateType} Estimate
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <EstimateForm 
+              estimateType={estimateType}
+              currentStep={currentStep}
+              setCurrentStep={setCurrentStep}
+              totalSteps={totalSteps}
+            />
+          </CardContent>
+        </Card>
       </main>
       
       {/* Bottom Navigation */}
