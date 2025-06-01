@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Json } from "@/integrations/supabase/types";
@@ -100,10 +99,11 @@ const isValidUUID = (str: string): boolean => {
 export const getEstimates = async (userId?: string): Promise<Estimate[]> => {
   // Always get estimates from local storage first to ensure UI isn't blocked
   const localEstimates = getEstimatesFromLocalStorage();
+  const deletedEstimateIds = getDeletedEstimateIds();
   
-  // If user is not logged in or offline, return only local estimates
+  // If user is not logged in or offline, return only local estimates (excluding deleted ones)
   if (!userId || !navigator.onLine) {
-    return localEstimates;
+    return localEstimates.filter(estimate => !deletedEstimateIds.includes(estimate.id));
   }
   
   try {
@@ -128,12 +128,12 @@ export const getEstimates = async (userId?: string): Promise<Estimate[]> => {
     
     if (error) {
       console.error("Error fetching estimates from Supabase:", error);
-      return localEstimates;
+      return localEstimates.filter(estimate => !deletedEstimateIds.includes(estimate.id));
     }
     
     if (!data) {
       console.warn("No data returned from Supabase");
-      return localEstimates;
+      return localEstimates.filter(estimate => !deletedEstimateIds.includes(estimate.id));
     }
     
     // Transform Supabase estimates to match our format
@@ -149,23 +149,27 @@ export const getEstimates = async (userId?: string): Promise<Estimate[]> => {
       syncStatus: 'synced' as const
     }));
     
-    // Merge estimates, prioritizing Supabase data
+    // Merge estimates, prioritizing Supabase data but excluding deleted ones
     const estimateMap = new Map<string, Estimate>();
     
-    // Add local estimates first
+    // Add local estimates first (excluding deleted ones)
     localEstimates.forEach(estimate => {
-      estimateMap.set(estimate.id, estimate);
+      if (!deletedEstimateIds.includes(estimate.id)) {
+        estimateMap.set(estimate.id, estimate);
+      }
     });
     
-    // Override with Supabase estimates
+    // Override with Supabase estimates (excluding deleted ones)
     supabaseEstimates.forEach(estimate => {
-      estimateMap.set(estimate.id, estimate);
+      if (!deletedEstimateIds.includes(estimate.id)) {
+        estimateMap.set(estimate.id, estimate);
+      }
     });
     
     return Array.from(estimateMap.values());
   } catch (error) {
     console.error("Failed to fetch estimates from Supabase:", error);
-    return localEstimates; // Fallback to local estimates
+    return localEstimates.filter(estimate => !deletedEstimateIds.includes(estimate.id)); // Fallback to local estimates
   }
 };
 
@@ -199,6 +203,47 @@ export const getEstimatesFromLocalStorage = (): Estimate[] => {
   } catch (error) {
     console.error("Failed to read estimates from local storage:", error);
     return [];
+  }
+};
+
+/**
+ * Marks an estimate as deleted in local storage
+ */
+export const markEstimateAsDeleted = (estimateId: string): void => {
+  try {
+    const deletedIds = getDeletedEstimateIds();
+    if (!deletedIds.includes(estimateId)) {
+      deletedIds.push(estimateId);
+      localStorage.setItem('mistryMateDeletedEstimates', JSON.stringify(deletedIds));
+    }
+  } catch (error) {
+    console.error("Failed to mark estimate as deleted:", error);
+  }
+};
+
+/**
+ * Gets list of deleted estimate IDs
+ */
+export const getDeletedEstimateIds = (): string[] => {
+  try {
+    const data = localStorage.getItem('mistryMateDeletedEstimates');
+    return data ? JSON.parse(data) : [];
+  } catch (error) {
+    console.error("Failed to get deleted estimate IDs:", error);
+    return [];
+  }
+};
+
+/**
+ * Removes an estimate from the deleted list (used when permanently deleting from Supabase)
+ */
+export const removeFromDeletedList = (estimateId: string): void => {
+  try {
+    const deletedIds = getDeletedEstimateIds();
+    const updatedIds = deletedIds.filter(id => id !== estimateId);
+    localStorage.setItem('mistryMateDeletedEstimates', JSON.stringify(updatedIds));
+  } catch (error) {
+    console.error("Failed to remove from deleted list:", error);
   }
 };
 

@@ -12,6 +12,8 @@ import {
   getEstimates, 
   saveEstimateToLocalStorage, 
   syncPendingEstimates,
+  markEstimateAsDeleted,
+  removeFromDeletedList,
   Estimate
 } from '@/services/estimateService';
 import { supabase } from '@/integrations/supabase/client';
@@ -97,6 +99,9 @@ const SavedEstimatesPage = () => {
     // Update localStorage
     localStorage.setItem('mistryMateEstimates', JSON.stringify(newEstimates));
     
+    // Mark as deleted locally to prevent it from reappearing
+    markEstimateAsDeleted(id);
+    
     // If the user is logged in and online, delete from Supabase
     if (user && !user.isGuest && isOnline) {
       try {
@@ -108,6 +113,9 @@ const SavedEstimatesPage = () => {
           
         if (error) {
           console.error("Error deleting from Supabase:", error);
+        } else {
+          // Successfully deleted from Supabase, remove from deleted tracking
+          removeFromDeletedList(id);
         }
       } catch (error) {
         console.error("Failed to delete from Supabase:", error);
