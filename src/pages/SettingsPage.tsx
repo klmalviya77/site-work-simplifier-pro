@@ -121,6 +121,7 @@ const SettingsPage = () => {
               <LogoImage size="medium" />
               <p className="text-sm text-gray-500 mt-2">MistryMate v1.0.0</p>
               <p className="text-xs text-gray-400">Simplify Your Site Work</p>
+              <p className="text-xs text-gray-400">Made with dedication by <a href="https://www.instagram.com/thekuls77?igsh=dGp5a2lsMDkycjB3">Kuldeep Malviya</a></p>
             </div>
           </CardContent>
         </Card>
