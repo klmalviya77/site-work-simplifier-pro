@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FileText, Trash2, Search, CloudOff, RefreshCw } from 'lucide-react';
@@ -27,7 +28,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-const SavedEstimatesPage = () => {
+const CreateEstimatePage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -208,14 +209,14 @@ const SavedEstimatesPage = () => {
     ? estimates
     : estimates.filter(estimate => 
         (estimate.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-         estimate.clientName?.toLowerCase().includes(searchQuery.toLowerCase())
+         estimate.clientName?.toLowerCase().includes(searchQuery.toLowerCase()))
       );
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <header className="bg-mistryblue-500 text-white p-4">
         <div className="flex justify-between items-center">
-          <h1 className="text-xl font-bold">Saved Estimates</h1>
+          <h1 className="text-xl font-bold">Create Estimate</h1>
           {!isOnline && (
             <div className="flex items-center text-xs bg-amber-500 px-2 py-1 rounded">
               <CloudOff size={14} className="mr-1" /> Offline Mode
@@ -311,13 +312,13 @@ const SavedEstimatesPage = () => {
         ) : (
           <div className="text-center py-12 bg-white border border-dashed border-gray-300 rounded-lg">
             <FileText className="mx-auto text-gray-400 h-12 w-12 mb-3" />
-            <h3 className="font-medium text-gray-700 mb-1">No Saved Estimates</h3>
+            <h3 className="font-medium text-gray-700 mb-1">No Estimates Found</h3>
             <p className="text-sm text-gray-500 mb-4">
-              Your saved estimates will appear here
+              Start by creating your first estimate
             </p>
             <Button 
               className="bg-mistryblue-500 hover:bg-mistryblue-600"
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/create-estimate')}
             >
               Create New Estimate
             </Button>
@@ -350,4 +351,4 @@ const SavedEstimatesPage = () => {
   );
 };
 
-export default SavedEstimatesPage;
+export default CreateEstimatePage;
