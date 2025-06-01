@@ -36,6 +36,9 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
         <p className="text-white mt-4 text-xl animate-fade-in">
           Simplify Your Site Work
         </p>
+      <p className="text-gray mt-3 text-xl animate-fade-in">
+          Made with dedication by Kuldeep Malviya
+        </p>
       )}
     </div>
   );
