@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FileText, Trash2, Search, CloudOff, RefreshCw } from 'lucide-react';
@@ -208,7 +209,7 @@ const SavedEstimatesPage = () => {
     ? estimates
     : estimates.filter(estimate => 
         (estimate.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-         estimate.clientName?.toLowerCase().includes(searchQuery.toLowerCase())
+         estimate.clientName?.toLowerCase().includes(searchQuery.toLowerCase()))
       );
 
   return (
