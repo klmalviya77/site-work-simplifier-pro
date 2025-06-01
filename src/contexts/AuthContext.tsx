@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, UserRole } from '@/types/auth';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,9 +22,6 @@ const AuthContext = createContext<AuthContextType>({
   logout: () => {},
 });
 
-// Custom hook to use auth context
-export const useAuth = () => useContext(AuthContext);
-
 // Define a type for the profile data we expect from Supabase
 interface ProfileData {
   name?: string | null;
@@ -31,11 +29,11 @@ interface ProfileData {
 }
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [user, setUser] = React.useState<User | null>(null);
+  const [isLoading, setIsLoading] = React.useState<boolean>(true);
 
   // Set up auth state listener
-  useEffect(() => {
+  React.useEffect(() => {
     // First set up the auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
@@ -198,4 +196,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       {children}
     </AuthContext.Provider>
   );
+};
+
+// Custom hook to use auth context
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };
