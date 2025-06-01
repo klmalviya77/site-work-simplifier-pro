@@ -208,7 +208,7 @@ const SavedEstimatesPage = () => {
     ? estimates
     : estimates.filter(estimate => 
         (estimate.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-         estimate.clientName?.toLowerCase().includes(searchQuery.toLowerCase())
+         estimate.clientName?.toLowerCase().includes(searchQuery.toLowerCase()))
       );
 
   return (
