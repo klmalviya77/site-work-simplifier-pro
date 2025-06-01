@@ -1,179 +1,169 @@
 
 import React, { useState } from 'react';
-import { Search, Filter, Zap, Wrench } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Search, Book, BookOpen, Shield, Lightbulb } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Navigation from '@/components/Navigation';
-import LogoImage from '@/components/LogoImage';
 
 const MaterialGuidePage = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  
-  // Mock data for materials
-  const materials = [
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState('electrical');
+
+  const electricalGuides = [
     {
-      id: 1,
-      name: 'THHN Wire 12 AWG',
-      category: 'electrical',
-      price: '$45.99',
-      unit: 'per 100ft',
-      description: 'Copper conductor wire for residential wiring',
-      applications: ['Residential', 'Commercial'],
+      title: 'Wiring Safety Standards',
+      category: 'Safety',
+      icon: Shield,
+      content: 'Always follow proper safety protocols when working with electrical systems. Ensure power is off before starting any work.'
     },
     {
-      id: 2,
-      name: 'PVC Pipe 1/2"',
-      category: 'plumbing',
-      price: '$12.50',
-      unit: 'per 10ft',
-      description: 'Schedule 40 PVC pipe for water supply',
-      applications: ['Water Supply', 'Irrigation'],
+      title: 'Wire Gauge Selection',
+      category: 'Wiring',
+      icon: Book,
+      content: 'Use appropriate wire gauge based on the current load. 14 AWG for 15A, 12 AWG for 20A, and 10 AWG for 30A circuits.'
     },
     {
-      id: 3,
-      name: 'GFCI Outlet',
-      category: 'electrical',
-      price: '$18.75',
-      unit: 'each',
-      description: 'Ground fault circuit interrupter outlet',
-      applications: ['Bathroom', 'Kitchen', 'Outdoor'],
+      title: 'Outlet Installation Guide',
+      category: 'Installation',
+      icon: BookOpen,
+      content: 'Proper outlet installation requires careful attention to wiring polarity and secure connections.'
     },
     {
-      id: 4,
-      name: 'Copper Fitting 1/2"',
-      category: 'plumbing',
-      price: '$3.25',
-      unit: 'each',
-      description: 'Copper elbow fitting for pipe connections',
-      applications: ['Hot Water', 'Cold Water'],
-    },
+      title: 'LED vs Traditional Lighting',
+      category: 'Lighting',
+      icon: Lightbulb,
+      content: 'LED lighting offers significant energy savings compared to traditional incandescent bulbs, with up to 75% less energy usage.'
+    }
   ];
-  
-  const categories = [
-    { id: 'all', name: 'All', icon: null },
-    { id: 'electrical', name: 'Electrical', icon: Zap },
-    { id: 'plumbing', name: 'Plumbing', icon: Wrench },
+
+  const plumbingGuides = [
+    {
+      title: 'Pipe Material Selection',
+      category: 'Materials',
+      icon: Book,
+      content: 'Choose appropriate pipe materials based on usage: PVC for wastewater, CPVC for hot water, PEX for flexible water supply.'
+    },
+    {
+      title: 'Leak Detection Tips',
+      category: 'Maintenance',
+      icon: Shield,
+      content: 'Regular inspection of pipes and connections can help identify leaks early before they cause significant damage.'
+    },
+    {
+      title: 'Water Pressure Standards',
+      category: 'Technical',
+      icon: BookOpen,
+      content: 'Residential water pressure should typically be between 40-60 PSI for optimal performance and appliance safety.'
+    },
+    {
+      title: 'Fixture Installation Guide',
+      category: 'Installation',
+      icon: BookOpen,
+      content: 'Proper sealing and securing of fixtures prevents leaks and ensures long-term performance.'
+    }
   ];
-  
-  const filteredMaterials = materials.filter(material => {
-    const matchesSearch = material.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         material.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || material.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
-  
+
+  const guides = activeTab === 'electrical' ? electricalGuides : plumbingGuides;
+
+  const filteredGuides = searchQuery.trim() === '' 
+    ? guides 
+    : guides.filter(guide => 
+        guide.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        guide.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        guide.category.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
+    <div className="min-h-screen bg-gray-50 pb-20">
       {/* Header */}
-      <header className="bg-mistryblue-500 dark:bg-mistryblue-600 text-white p-4 shadow-md">
+      <header className="bg-mistryblue-500 text-white p-4">
         <div className="flex justify-between items-center">
-          <LogoImage size="small" />
-          <div className="text-sm">
-            Material Guide
-          </div>
+          <h1 className="text-xl font-bold">Material Guide</h1>
         </div>
       </header>
-      
+
       {/* Main Content */}
       <main className="p-4 max-w-lg mx-auto">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold mb-2 dark:text-white">Material Guide</h1>
-          <p className="text-gray-600 dark:text-gray-300">
-            Find materials, prices, and specifications
-          </p>
-        </div>
-        
-        {/* Search Bar */}
         <div className="relative mb-4">
-          <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
           <Input
-            placeholder="Search materials..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+            placeholder="Search guides..."
+            className="pl-9"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        
-        {/* Category Filters */}
-        <div className="flex gap-2 mb-6 overflow-x-auto">
-          {categories.map((category) => {
-            const Icon = category.icon;
-            return (
-              <Button
-                key={category.id}
-                variant={selectedCategory === category.id ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedCategory(category.id)}
-                className={`flex items-center whitespace-nowrap ${
-                  selectedCategory === category.id 
-                    ? 'bg-mistryblue-500 hover:bg-mistryblue-600 dark:bg-mistryblue-600 dark:hover:bg-mistryblue-700' 
-                    : 'dark:border-gray-600 dark:text-white'
-                }`}
-              >
-                {Icon && <Icon size={14} className="mr-1" />}
-                {category.name}
-              </Button>
-            );
-          })}
-        </div>
-        
-        {/* Materials List */}
-        <div className="space-y-4">
-          {filteredMaterials.length === 0 ? (
-            <Card className="dark:bg-gray-800 dark:border-gray-700">
-              <CardContent className="text-center py-8">
-                <p className="text-gray-500 dark:text-gray-400">
-                  No materials found matching your search.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            filteredMaterials.map((material) => (
-              <Card key={material.id} className="dark:bg-gray-800 dark:border-gray-700">
-                <CardHeader className="pb-3">
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="text-lg dark:text-white">
-                      {material.name}
-                    </CardTitle>
-                    <Badge variant="secondary" className="capitalize">
-                      {material.category}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <p className="text-gray-600 dark:text-gray-300 text-sm mb-3">
-                    {material.description}
-                  </p>
-                  
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="font-semibold text-mistryblue-600 dark:text-mistryblue-400">
-                      {material.price}
-                    </span>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {material.unit}
-                    </span>
-                  </div>
-                  
-                  <div>
-                    <p className="text-sm font-medium mb-1 dark:text-white">Applications:</p>
-                    <div className="flex flex-wrap gap-1">
-                      {material.applications.map((app, index) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                          {app}
-                        </Badge>
-                      ))}
+
+        <Tabs 
+          defaultValue="electrical" 
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="w-full"
+        >
+          <TabsList className="grid grid-cols-2 mb-4">
+            <TabsTrigger value="electrical">Electrical</TabsTrigger>
+            <TabsTrigger value="plumbing">Plumbing</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="electrical" className="mt-0">
+            <div className="space-y-4">
+              {filteredGuides.map((guide, index) => (
+                <Card key={index}>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="text-lg">{guide.title}</CardTitle>
+                        <CardDescription>{guide.category}</CardDescription>
+                      </div>
+                      <guide.icon className="h-5 w-5 text-mistryblue-500" />
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-gray-600">{guide.content}</p>
+                  </CardContent>
+                </Card>
+              ))}
+              
+              {filteredGuides.length === 0 && (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No guides found</p>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="plumbing" className="mt-0">
+            <div className="space-y-4">
+              {filteredGuides.map((guide, index) => (
+                <Card key={index}>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="text-lg">{guide.title}</CardTitle>
+                        <CardDescription>{guide.category}</CardDescription>
+                      </div>
+                      <guide.icon className="h-5 w-5 text-mistryyellow-500" />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-gray-600">{guide.content}</p>
+                  </CardContent>
+                </Card>
+              ))}
+              
+              {filteredGuides.length === 0 && (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No guides found</p>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
       </main>
-      
+
       {/* Bottom Navigation */}
       <Navigation />
     </div>

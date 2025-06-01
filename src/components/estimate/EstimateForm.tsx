@@ -1,163 +1,80 @@
-
 import React from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 interface EstimateFormProps {
-  estimateType: string;
-  currentStep: number;
-  setCurrentStep: (step: number) => void;
-  totalSteps: number;
+  selectedMaterial: string;
+  quantity: number;
+  rate: number;
+  onQuantityChange: (quantity: number) => void;
+  onRateChange: (rate: number) => void;
+  onAddItem: () => void;
+  isAdding?: boolean; // Loading state ke liye
 }
 
 const EstimateForm = ({
-  estimateType,
-  currentStep,
-  setCurrentStep,
-  totalSteps,
+  selectedMaterial,
+  quantity,
+  rate,
+  onQuantityChange,
+  onRateChange,
+  onAddItem,
+  isAdding = false,
 }: EstimateFormProps) => {
-  // For now, this is a placeholder form
-  // You can expand this with actual form logic based on estimateType and steps
-  
-  const handleNext = () => {
-    if (currentStep < totalSteps) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
-
-  const handlePrevious = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
+  const isDisabled = !selectedMaterial || quantity <= 0 || rate <= 0 || isAdding;
 
   return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <h3 className="text-lg font-medium mb-2">
-          Step {currentStep}: {estimateType} Details
-        </h3>
-        <p className="text-gray-600 dark:text-gray-300">
-          Please provide the required information for your {estimateType} estimate.
-        </p>
+    <>
+      {/* Quantity */}
+      <div className="mb-6">
+        <label htmlFor="quantity" className="block text-base font-medium mb-2">
+          Quantity
+        </label>
+        <Input
+          id="quantity"
+          type="number"
+          value={quantity || ""}
+          onChange={(e) => {
+            const val = parseInt(e.target.value);
+            if (!isNaN(val) && val >= 1) onQuantityChange(val);
+          }}
+          min="1"
+          placeholder="Enter quantity"
+          className="w-full border-2"
+        />
       </div>
 
-      {/* Form content based on current step */}
-      {currentStep === 1 && (
-        <div className="space-y-4">
-          <div>
-            <label htmlFor="project-name" className="block text-base font-medium mb-2">
-              Project Name
-            </label>
-            <Input
-              id="project-name"
-              type="text"
-              placeholder="Enter project name"
-              className="w-full border-2"
-            />
-          </div>
-          <div>
-            <label htmlFor="location" className="block text-base font-medium mb-2">
-              Location
-            </label>
-            <Input
-              id="location"
-              type="text"
-              placeholder="Enter project location"
-              className="w-full border-2"
-            />
-          </div>
-        </div>
-      )}
-
-      {currentStep === 2 && (
-        <div className="space-y-4">
-          <div>
-            <label htmlFor="material" className="block text-base font-medium mb-2">
-              Material Type
-            </label>
-            <Input
-              id="material"
-              type="text"
-              placeholder="Enter material type"
-              className="w-full border-2"
-            />
-          </div>
-          <div>
-            <label htmlFor="quantity" className="block text-base font-medium mb-2">
-              Quantity
-            </label>
-            <Input
-              id="quantity"
-              type="number"
-              placeholder="Enter quantity"
-              className="w-full border-2"
-            />
-          </div>
-        </div>
-      )}
-
-      {currentStep === 3 && (
-        <div className="space-y-4">
-          <div>
-            <label htmlFor="rate" className="block text-base font-medium mb-2">
-              Rate (INR)
-            </label>
-            <Input
-              id="rate"
-              type="number"
-              placeholder="Enter rate"
-              className="w-full border-2"
-            />
-          </div>
-          <div>
-            <label htmlFor="notes" className="block text-base font-medium mb-2">
-              Additional Notes
-            </label>
-            <Input
-              id="notes"
-              type="text"
-              placeholder="Any additional notes"
-              className="w-full border-2"
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Navigation buttons */}
-      <div className="flex justify-between pt-4">
-        {currentStep > 1 && (
-          <Button
-            onClick={handlePrevious}
-            variant="outline"
-            className="px-6"
-          >
-            Previous
-          </Button>
-        )}
-        
-        <div className="ml-auto">
-          {currentStep < totalSteps ? (
-            <Button
-              onClick={handleNext}
-              className="bg-blue-500 hover:bg-blue-600 px-6"
-            >
-              Next
-            </Button>
-          ) : (
-            <Button
-              className="bg-green-500 hover:bg-green-600 px-6"
-              onClick={() => {
-                // Handle form submission here
-                console.log('Form submitted');
-              }}
-            >
-              Create Estimate
-            </Button>
-          )}
-        </div>
+      {/* Rate */}
+      <div className="mb-6">
+        <label htmlFor="rate" className="block text-base font-medium mb-2">
+          Rate (INR)
+        </label>
+        <Input
+          id="rate"
+          type="number"
+          value={rate || ""}
+          onChange={(e) => {
+            const val = parseFloat(e.target.value);
+            if (!isNaN(val) && val >= 0) onRateChange(val);
+          }}
+          min="0"
+          step="0.01"
+          placeholder="Enter rate"
+          className="w-full border-2"
+        />
       </div>
-    </div>
+
+      {/* Add Button */}
+      <Button
+        className={`w-full bg-blue-500 hover:bg-blue-600 py-6 text-base ${
+          isDisabled ? "opacity-70 cursor-not-allowed" : ""
+        }`}
+        onClick={onAddItem}
+        disabled={isDisabled}
+      >
+        {isAdding ? "Adding..." : "Add to Estimate"}
+      </Button>
+    </>
   );
 };
 
