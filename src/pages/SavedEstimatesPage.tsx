@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FileText, Trash2, Search, CloudOff, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -39,8 +39,8 @@ const SavedEstimatesPage = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [estimateToDelete, setEstimateToDelete] = useState<string | null>(null);
+  const realtimeSubscription = useRef<any>(null);
   
-  // Network status effect
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
@@ -54,7 +54,6 @@ const SavedEstimatesPage = () => {
     };
   }, []);
 
-  // Load estimates with memoization
   const loadEstimates = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -72,28 +71,40 @@ const SavedEstimatesPage = () => {
     }
   }, [user?.id, toast]);
 
-  // Initial load and realtime subscription
-  useEffect(() => {
-    loadEstimates();
+  const setupRealtimeSubscription = useCallback(() => {
+    if (realtimeSubscription.current) {
+      supabase.removeChannel(realtimeSubscription.current);
+    }
     
     if (user && !user.isGuest) {
-      const channel = supabase
+      realtimeSubscription.current = supabase
         .channel('estimate-changes')
         .on('postgres_changes', { 
           event: '*', 
           schema: 'public', 
           table: 'estimates',
           filter: `user_id=eq.${user.id}`
-        }, () => {
-          loadEstimates();
+        }, async (payload) => {
+          // Skip if this is our own delete operation
+          if (payload.eventType === 'DELETE' && payload.old.id === estimateToDelete) {
+            return;
+          }
+          await loadEstimates();
         })
         .subscribe();
-        
-      return () => {
-        supabase.removeChannel(channel);
-      };
     }
-  }, [user, loadEstimates]);
+  }, [user, loadEstimates, estimateToDelete]);
+
+  useEffect(() => {
+    loadEstimates();
+    setupRealtimeSubscription();
+    
+    return () => {
+      if (realtimeSubscription.current) {
+        supabase.removeChannel(realtimeSubscription.current);
+      }
+    };
+  }, [loadEstimates, setupRealtimeSubscription]);
 
   const handleSyncEstimates = async () => {
     if (!user || user.isGuest || !isOnline) return;
@@ -130,6 +141,11 @@ const SavedEstimatesPage = () => {
     setDeleteDialogOpen(false);
     
     try {
+      // Temporarily unsubscribe from realtime updates
+      if (realtimeSubscription.current) {
+        supabase.removeChannel(realtimeSubscription.current);
+      }
+      
       // Optimistic update
       setEstimates(prev => prev.filter(estimate => estimate.id !== id));
       
@@ -161,7 +177,7 @@ const SavedEstimatesPage = () => {
     } catch (error) {
       console.error("Delete failed:", error);
       // Revert optimistic update if failed
-      loadEstimates();
+      await loadEstimates();
       toast({
         title: "Delete failed",
         description: "Could not delete the estimate",
@@ -169,6 +185,10 @@ const SavedEstimatesPage = () => {
       });
     } finally {
       setEstimateToDelete(null);
+      // Resubscribe to realtime updates
+      if (user && !user.isGuest) {
+        setupRealtimeSubscription();
+      }
     }
   };
 
@@ -177,32 +197,22 @@ const SavedEstimatesPage = () => {
   };
 
   const formatDate = (dateString: string) => {
-    try {
-      return new Date(dateString).toLocaleDateString('en-IN', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      });
-    } catch {
-      return 'Invalid date';
-    }
+    return new Date(dateString).toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
   };
 
-  const filteredEstimates = estimates.filter(estimate => {
-    if (searchQuery.trim() === '') return true;
-    
-    const query = searchQuery.toLowerCase();
-    return (
-      estimate.title?.toLowerCase().includes(query) ||
-      estimate.clientName?.toLowerCase().includes(query) ||
-      estimate.type.toLowerCase().includes(query) ||
-      estimate.total.toString().includes(query)
-    );
-  });
+  const filteredEstimates = searchQuery.trim() === ''
+    ? estimates
+    : estimates.filter(estimate => 
+        (estimate.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+         estimate.clientName?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      {/* Header */}
       <header className="bg-mistryblue-500 text-white p-4">
         <div className="flex justify-between items-center">
           <h1 className="text-xl font-bold">Saved Estimates</h1>
@@ -217,29 +227,26 @@ const SavedEstimatesPage = () => {
               variant="outline"
               className="bg-white text-mistryblue-500 border-white"
               onClick={handleSyncEstimates}
-              disabled={isSyncing || isLoading}
+              disabled={isSyncing}
             >
               <RefreshCw size={14} className={`mr-1 ${isSyncing ? 'animate-spin' : ''}`} /> 
-              {isSyncing ? 'Syncing...' : 'Sync'}
+              Sync
             </Button>
           )}
         </div>
       </header>
       
-      {/* Main Content */}
       <main className="p-4 max-w-lg mx-auto">
-        {/* Search */}
         <div className="relative mb-4">
           <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
           <Input
-            placeholder="Search estimates by title, client, type or amount..."
+            placeholder="Search estimates..."
             className="pl-9"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
         
-        {/* Estimates List */}
         {isLoading ? (
           <div className="text-center py-8">
             <div className="animate-spin w-6 h-6 border-2 border-mistryblue-500 border-t-transparent rounded-full mx-auto mb-2"></div>
@@ -248,10 +255,10 @@ const SavedEstimatesPage = () => {
         ) : filteredEstimates.length > 0 ? (
           <div className="space-y-3 mb-6">
             {filteredEstimates.map((estimate) => (
-              <Card key={estimate.id} className="p-4 hover:shadow-md transition-shadow">
+              <Card key={estimate.id} className="p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <div className="max-w-[70%]">
-                    <h3 className="font-medium truncate">
+                  <div>
+                    <h3 className="font-medium">
                       {estimate.title || `${estimate.type.charAt(0).toUpperCase() + estimate.type.slice(1)} Estimate`}
                     </h3>
                     <p className="text-sm text-gray-500">
@@ -262,25 +269,21 @@ const SavedEstimatesPage = () => {
                     {estimate.syncStatus === 'pending' && (
                       <span className="mr-2 w-2 h-2 bg-amber-500 rounded-full" title="Pending sync"></span>
                     )}
-                    <div className={`capitalize px-2 py-1 rounded text-xs ${
-                      estimate.type === 'electrical' ? 'bg-blue-100 text-blue-800' : 
-                      estimate.type === 'plumbing' ? 'bg-green-100 text-green-800' :
-                      'bg-yellow-100 text-yellow-800'
-                    }`}>
+                    <div className={`capitalize px-2 py-1 rounded text-xs ${estimate.type === 'electrical' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'}`}>
                       {estimate.type}
                     </div>
                   </div>
                 </div>
                 
                 <div className="flex justify-between text-sm mb-3">
-                  <span className="truncate max-w-[60%]">
+                  <span>
                     {estimate.clientName ? (
                       <>Client: <span className="font-medium">{estimate.clientName}</span></>
                     ) : (
                       <span className="text-gray-500">No client specified</span>
                     )}
                   </span>
-                  <span className="font-medium">₹{estimate.total.toLocaleString('en-IN')}</span>
+                  <span className="font-medium">₹{estimate.total}</span>
                 </div>
                 
                 <div className="flex justify-between">
@@ -296,7 +299,7 @@ const SavedEstimatesPage = () => {
                   <Button 
                     variant="ghost" 
                     size="sm"
-                    className="text-red-500 hover:bg-red-50"
+                    className="text-red-500"
                     onClick={() => confirmDelete(estimate.id)}
                   >
                     <Trash2 size={14} className="mr-1" /> Delete
@@ -304,20 +307,6 @@ const SavedEstimatesPage = () => {
                 </div>
               </Card>
             ))}
-          </div>
-        ) : searchQuery ? (
-          <div className="text-center py-12 bg-white border border-dashed border-gray-300 rounded-lg">
-            <Search className="mx-auto text-gray-400 h-12 w-12 mb-3" />
-            <h3 className="font-medium text-gray-700 mb-1">No Matching Estimates</h3>
-            <p className="text-sm text-gray-500 mb-4">
-              No estimates found for "{searchQuery}"
-            </p>
-            <Button 
-              variant="outline"
-              onClick={() => setSearchQuery('')}
-            >
-              Clear Search
-            </Button>
           </div>
         ) : (
           <div className="text-center py-12 bg-white border border-dashed border-gray-300 rounded-lg">
@@ -336,7 +325,6 @@ const SavedEstimatesPage = () => {
         )}
       </main>
       
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -357,7 +345,6 @@ const SavedEstimatesPage = () => {
         </AlertDialogContent>
       </AlertDialog>
       
-      {/* Bottom Navigation */}
       <Navigation />
     </div>
   );
