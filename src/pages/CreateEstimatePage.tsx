@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, ArrowLeft } from 'lucide-react';
@@ -12,7 +11,7 @@ import EstimateForm from '@/components/estimate/EstimateForm';
 import EstimateItemsList from '@/components/estimate/EstimateItemsList';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveEstimate } from '@/services/estimateService';
-import { materialSuggestions } from '@/data/materialSuggestions';
+import materialSuggestions from '@/data/materialSuggestions';
 
 interface Material {
   name: string;
