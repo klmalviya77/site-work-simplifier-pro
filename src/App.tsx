@@ -121,6 +121,12 @@ const AppRoutes = () => {
         </ProtectedRoute>
       } />
       
+      <Route path="/guide/:id" element={
+        <ProtectedRoute>
+          <MaterialGuideDetailPage />
+        </ProtectedRoute>
+      } />
+      
       <Route path="/calculator" element={
         <ProtectedRoute>
           <CalculatorPage />
