@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -17,6 +18,7 @@ import SettingsPage from "./pages/SettingsPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import SplashScreen from "./components/SplashScreen";
 import MaterialGuidePage from "./pages/MaterialGuidePage";
+import MaterialGuideDetailPage from "./pages/MaterialGuideDetailPage";
 import CalculatorPage from "./pages/CalculatorPage";
 
 // Route guard for protected routes

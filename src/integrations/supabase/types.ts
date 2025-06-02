@@ -48,6 +48,45 @@ export type Database = {
         }
         Relationships: []
       }
+      material_guides: {
+        Row: {
+          author: string | null
+          category: string
+          content: string
+          created_at: string
+          id: string
+          img_url: string | null
+          summary: string
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          author?: string | null
+          category: string
+          content: string
+          created_at?: string
+          id?: string
+          img_url?: string | null
+          summary: string
+          title: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          author?: string | null
+          category?: string
+          content?: string
+          created_at?: string
+          id?: string
+          img_url?: string | null
+          summary?: string
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           id: string
