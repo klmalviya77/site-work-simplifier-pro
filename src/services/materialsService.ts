@@ -35,7 +35,11 @@ export const getMaterials = async (type?: string, searchQuery?: string): Promise
     throw error;
   }
 
-  return data || [];
+  // Type cast the data to ensure compatibility
+  return (data || []).map(item => ({
+    ...item,
+    type: item.type as 'electrical' | 'plumbing'
+  }));
 };
 
 export const searchMaterials = async (
@@ -67,5 +71,9 @@ export const searchMaterials = async (
     throw error;
   }
 
-  return data || [];
+  // Type cast the data to ensure compatibility
+  return (data || []).map(item => ({
+    ...item,
+    type: item.type as 'electrical' | 'plumbing'
+  }));
 };
