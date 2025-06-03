@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, ArrowLeft } from 'lucide-react';
@@ -11,14 +12,7 @@ import EstimateForm from '@/components/estimate/EstimateForm';
 import EstimateItemsList from '@/components/estimate/EstimateItemsList';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveEstimate } from '@/services/estimateService';
-import materialSuggestions from '@/data/materialSuggestions';
-
-interface Material {
-  name: string;
-  category: string;
-  rate: number;
-  unit: string;
-}
+import { Material } from '@/services/materialsService';
 
 interface EstimateItem {
   id: string;
@@ -41,9 +35,6 @@ const CreateEstimatePage = () => {
   const [rate, setRate] = useState<number>(0);
   const [items, setItems] = useState<EstimateItem[]>([]);
   const [isAdding, setIsAdding] = useState(false);
-
-  // Get materials based on selected type
-  const materials = materialSuggestions[estimateType] || [];
 
   useEffect(() => {
     if (selectedMaterial) {
@@ -188,7 +179,7 @@ const CreateEstimatePage = () => {
           </CardHeader>
           <CardContent>
             <MaterialSelector
-              materials={materials}
+              estimateType={estimateType}
               selectedMaterial={selectedMaterial}
               onMaterialSelect={handleMaterialSelect}
             />

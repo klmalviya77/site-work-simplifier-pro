@@ -2,42 +2,37 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { useDebounce } from '@/hooks/use-debounce';
-
-interface Material {
-  name: string;
-  category: string;
-  rate: number;
-  unit: string;
-}
+import { useQuery } from '@tanstack/react-query';
+import { getMaterials, searchMaterials, Material } from '@/services/materialsService';
 
 interface MaterialSelectorProps {
-  materials: Material[];
+  estimateType: 'electrical' | 'plumbing';
   selectedMaterial: Material | null;
   onMaterialSelect: (material: Material) => void;
 }
 
 const MaterialSelector = ({ 
-  materials, 
+  estimateType,
   selectedMaterial, 
   onMaterialSelect
 }: MaterialSelectorProps) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredMaterials, setFilteredMaterials] = useState<Material[]>(materials);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
-  useEffect(() => {
-    if (debouncedSearchQuery.trim() === '') {
-      setFilteredMaterials(materials);
-    } else {
-      const filtered = materials.filter(material =>
-        material.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
-      );
-      setFilteredMaterials(filtered);
-    }
-  }, [debouncedSearchQuery, materials]);
+  // Fetch materials based on search query
+  const { data: materials = [], isLoading } = useQuery({
+    queryKey: ['materials', estimateType, debouncedSearchQuery],
+    queryFn: () => {
+      if (debouncedSearchQuery.trim()) {
+        return searchMaterials(debouncedSearchQuery, estimateType);
+      }
+      return getMaterials(estimateType);
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -57,7 +52,6 @@ const MaterialSelector = ({
 
   const handleInputClick = () => {
     setIsDropdownOpen(true);
-    setFilteredMaterials(materials);
   };
 
   const handleMaterialClick = (material: Material) => {
@@ -84,7 +78,7 @@ const MaterialSelector = ({
           onClick={handleInputClick}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
-          placeholder="Search material..."
+          placeholder="Search material by name or category..."
           className="w-full border-2 dark:bg-gray-700 dark:text-white dark:border-gray-600"
           aria-haspopup="listbox"
           aria-expanded={isDropdownOpen}
@@ -96,25 +90,34 @@ const MaterialSelector = ({
             style={{ maxHeight: 'calc(100vh - 200px)' }}
             role="listbox"
           >
-            {filteredMaterials.length > 0 ? (
-              filteredMaterials.map((material, index) => (
+            {isLoading ? (
+              <div className="px-4 py-2 text-gray-500 dark:text-gray-300">
+                Searching materials...
+              </div>
+            ) : materials.length > 0 ? (
+              materials.map((material) => (
                 <div
-                  key={`${material.name}-${index}`}
+                  key={material.id}
                   className="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer flex justify-between items-center"
                   onClick={() => handleMaterialClick(material)}
                   role="option"
                 >
-                  <span className="dark:text-white truncate flex-1 mr-2 text-sm">
-                    {material.name}
-                  </span>
+                  <div className="flex flex-col flex-1 mr-2">
+                    <span className="dark:text-white truncate text-sm font-medium">
+                      {material.name}
+                    </span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {material.category}
+                    </span>
+                  </div>
                   <span className="text-gray-500 dark:text-gray-300 flex-shrink-0 text-xs">
-                    ₹{material.rate ?? 0}/{material.unit}
+                    ₹{material.rate.toFixed(2)}/{material.unit}
                   </span>
                 </div>
               ))
             ) : (
               <div className="px-4 py-2 text-gray-500 dark:text-gray-300">
-                No materials found
+                {searchQuery.trim() ? 'No materials found for your search' : 'No materials available'}
               </div>
             )}
           </div>

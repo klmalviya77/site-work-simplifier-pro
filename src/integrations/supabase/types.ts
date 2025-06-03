@@ -87,6 +87,39 @@ export type Database = {
         }
         Relationships: []
       }
+      materials: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          name: string
+          rate: number
+          type: string
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          name: string
+          rate: number
+          type: string
+          unit: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          name?: string
+          rate?: number
+          type?: string
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           id: string
