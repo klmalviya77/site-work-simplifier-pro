@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, ArrowLeft } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -10,7 +10,12 @@ import Navigation from '@/components/Navigation';
 import MaterialSelector from '@/components/estimate/MaterialSelector';
 import EstimateForm from '@/components/estimate/EstimateForm';
 import EstimateItemsList from '@/components/estimate/EstimateItemsList';
+import AppHeader from '@/components/app/AppHeader';
+import SwipeableCard from '@/components/app/SwipeableCard';
+import OfflineIndicator from '@/components/app/OfflineIndicator';
+import LoadingSpinner from '@/components/app/LoadingSpinner';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAppBehavior } from '@/hooks/useAppBehavior';
 import { saveEstimate } from '@/services/estimateService';
 import { Material } from '@/services/materialsService';
 
@@ -28,6 +33,7 @@ const CreateEstimatePage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { isOnline, triggerHaptic } = useAppBehavior();
   
   const [estimateType, setEstimateType] = useState<'electrical' | 'plumbing'>('electrical');
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
@@ -35,6 +41,7 @@ const CreateEstimatePage = () => {
   const [rate, setRate] = useState<number>(0);
   const [items, setItems] = useState<EstimateItem[]>([]);
   const [isAdding, setIsAdding] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (selectedMaterial) {
@@ -43,6 +50,7 @@ const CreateEstimatePage = () => {
   }, [selectedMaterial]);
 
   const handleMaterialSelect = (material: Material) => {
+    triggerHaptic('light');
     setSelectedMaterial(material);
     setRate(material.rate);
   };
@@ -51,6 +59,7 @@ const CreateEstimatePage = () => {
     if (!selectedMaterial || quantity <= 0 || rate <= 0) return;
 
     setIsAdding(true);
+    triggerHaptic('medium');
     
     try {
       const newItem: EstimateItem = {
@@ -87,6 +96,7 @@ const CreateEstimatePage = () => {
   };
 
   const handleRemoveItem = (id: string) => {
+    triggerHaptic('heavy');
     setItems(prev => prev.filter(item => item.id !== id));
     toast({
       title: "Item removed",
@@ -107,6 +117,9 @@ const CreateEstimatePage = () => {
       });
       return;
     }
+
+    setIsSaving(true);
+    triggerHaptic('light');
 
     try {
       const estimate = {
@@ -134,35 +147,39 @@ const CreateEstimatePage = () => {
         description: "Failed to save estimate. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
+  if (isSaving) {
+    return <LoadingSpinner fullScreen text="Saving estimate..." />;
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      <header className="bg-mistryblue-500 text-white p-4">
-        <div className="flex items-center">
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate('/')} 
-            className="text-white p-2 mr-2 hover:bg-mistryblue-600"
-          >
-            <ArrowLeft size={20} />
-          </Button>
-          <h1 className="text-xl font-bold">Create Estimate</h1>
-        </div>
-      </header>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
+      <OfflineIndicator isOnline={isOnline} />
+      
+      <AppHeader 
+        title="Create Estimate" 
+        showBack 
+        onBack={() => navigate('/')}
+      />
       
       <main className="p-4 max-w-lg mx-auto">
-        <Card className="mb-6">
+        <Card className="mb-6 animate-fade-in">
           <CardHeader>
-            <CardTitle>Estimate Type</CardTitle>
+            <CardTitle className="dark:text-white">Estimate Type</CardTitle>
           </CardHeader>
           <CardContent>
             <Select 
               value={estimateType} 
-              onValueChange={(value: 'electrical' | 'plumbing') => setEstimateType(value)}
+              onValueChange={(value: 'electrical' | 'plumbing') => {
+                triggerHaptic('light');
+                setEstimateType(value);
+              }}
             >
-              <SelectTrigger>
+              <SelectTrigger className="dark:bg-gray-700 dark:text-white dark:border-gray-600">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -173,9 +190,9 @@ const CreateEstimatePage = () => {
           </CardContent>
         </Card>
 
-        <Card className="mb-6">
+        <Card className="mb-6 animate-fade-in">
           <CardHeader>
-            <CardTitle>Add Materials</CardTitle>
+            <CardTitle className="dark:text-white">Add Materials</CardTitle>
           </CardHeader>
           <CardContent>
             <MaterialSelector
@@ -196,11 +213,57 @@ const CreateEstimatePage = () => {
           </CardContent>
         </Card>
 
-        <EstimateItemsList
-          items={items}
-          onRemoveItem={handleRemoveItem}
-          onSaveEstimate={handleSaveEstimate}
-        />
+        {/* Enhanced items list with swipe functionality */}
+        {items.length > 0 && (
+          <Card className="mb-6 animate-fade-in">
+            <CardHeader>
+              <CardTitle className="dark:text-white">
+                Items ({items.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="divide-y dark:divide-gray-700">
+                {items.map((item) => (
+                  <SwipeableCard 
+                    key={item.id}
+                    onDelete={() => handleRemoveItem(item.id)}
+                    className="p-4"
+                  >
+                    <div className="flex justify-between items-center">
+                      <div className="flex-1">
+                        <p className="font-medium dark:text-white">{item.name}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          {item.quantity} {item.unit} × ₹{item.rate.toFixed(2)}
+                        </p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">{item.category}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-lg dark:text-white">₹{item.total.toFixed(2)}</p>
+                      </div>
+                    </div>
+                  </SwipeableCard>
+                ))}
+                
+                <div className="p-4 bg-gray-50 dark:bg-gray-800">
+                  <div className="flex justify-between items-center font-bold text-lg">
+                    <span className="dark:text-white">Total</span>
+                    <span className="dark:text-white">₹{calculateTotal().toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-4">
+                <Button 
+                  className="w-full bg-mistryblue-500 hover:bg-mistryblue-600 dark:bg-mistryblue-600 dark:hover:bg-mistryblue-700 transform transition-all duration-200 active:scale-95"
+                  onClick={handleSaveEstimate}
+                  disabled={isSaving}
+                >
+                  {isSaving ? <LoadingSpinner size="sm" /> : 'Create Estimate'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </main>
       
       <Navigation />
