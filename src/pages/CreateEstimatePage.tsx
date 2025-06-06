@@ -14,15 +14,7 @@ import LoadingSpinner from '@/components/app/LoadingSpinner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAppBehavior } from '@/hooks/useAppBehavior';
 import { saveEstimate } from '@/services/estimateService';
-
-interface EstimateItem {
-  id: string;
-  name: string;
-  quantity: number;
-  rate: number;
-  total: number;
-  note?: string;
-}
+import type { EstimateItem } from '@/services/estimateService';
 
 const CreateEstimatePage = () => {
   const navigate = useNavigate();
@@ -49,10 +41,11 @@ const CreateEstimatePage = () => {
       const newItem: EstimateItem = {
         id: crypto.randomUUID(),
         name: materialName.trim(),
+        category: estimateType, // Use estimate type as category
         quantity,
+        unit: 'pcs', // Default unit, could be made configurable later
         rate,
         total: quantity * rate,
-        note: note.trim() || undefined,
       };
 
       setItems(prev => [...prev, newItem]);
@@ -214,11 +207,11 @@ const CreateEstimatePage = () => {
                       <div className="flex-1">
                         <p className="font-medium dark:text-white">{item.name}</p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {item.quantity} × ₹{item.rate.toFixed(2)}
+                          {item.quantity} {item.unit} × ₹{item.rate.toFixed(2)}
                         </p>
-                        {item.note && (
+                        {note && (
                           <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                            Note: {item.note}
+                            Note: {note}
                           </p>
                         )}
                       </div>
