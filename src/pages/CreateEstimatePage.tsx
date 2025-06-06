@@ -29,7 +29,7 @@ const CreateEstimatePage = () => {
   const [estimateType, setEstimateType] = useState<'electrical' | 'plumbing'>('electrical');
   const [materialName, setMaterialName] = useState<string>('');
   const [quantity, setQuantity] = useState<number>(1);
-  const [rate, setRate] = useState<number>(0);
+  const [rate, setRate] = useState<number>(1);
   const [note, setNote] = useState<string>('');
   const [items, setItems] = useState<EstimateItem[]>([]);
   const [isAdding, setIsAdding] = useState(false);
@@ -95,7 +95,7 @@ const CreateEstimatePage = () => {
       // Reset form
       setMaterialName('');
       setQuantity(1);
-      setRate(0);
+      setRate(1);
       setNote('');
       
       toast({

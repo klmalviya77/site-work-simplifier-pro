@@ -17,7 +17,7 @@ const Navigation: React.FC = () => {
   const currentPath = location.pathname;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-2 px-4 flex justify-around">
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-2 px-4 flex justify-around">
       {navItems.map((item) => (
         <Link 
           key={item.name} 
