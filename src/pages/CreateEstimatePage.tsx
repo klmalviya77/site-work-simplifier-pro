@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,6 +15,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAppBehavior } from '@/hooks/useAppBehavior';
 import { saveEstimate } from '@/services/estimateService';
 import type { EstimateItem } from '@/services/estimateService';
+import { Trash2 } from 'lucide-react';
+
+const TEMP_ITEMS_KEY = 'mistryMate_tempEstimateItems';
+const TEMP_TYPE_KEY = 'mistryMate_tempEstimateType';
 
 const CreateEstimatePage = () => {
   const navigate = useNavigate();
@@ -30,6 +34,44 @@ const CreateEstimatePage = () => {
   const [items, setItems] = useState<EstimateItem[]>([]);
   const [isAdding, setIsAdding] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Load temporary items and estimate type from localStorage on component mount
+  useEffect(() => {
+    const savedItems = localStorage.getItem(TEMP_ITEMS_KEY);
+    const savedType = localStorage.getItem(TEMP_TYPE_KEY);
+    
+    if (savedItems) {
+      try {
+        const parsedItems = JSON.parse(savedItems);
+        setItems(parsedItems);
+        console.log('Restored temp items from localStorage:', parsedItems);
+      } catch (error) {
+        console.error('Failed to parse saved items:', error);
+        localStorage.removeItem(TEMP_ITEMS_KEY);
+      }
+    }
+    
+    if (savedType && (savedType === 'electrical' || savedType === 'plumbing')) {
+      setEstimateType(savedType);
+      console.log('Restored estimate type from localStorage:', savedType);
+    }
+  }, []);
+
+  // Auto-save items to localStorage whenever items change
+  useEffect(() => {
+    if (items.length > 0) {
+      localStorage.setItem(TEMP_ITEMS_KEY, JSON.stringify(items));
+      console.log('Auto-saved items to localStorage:', items);
+    } else {
+      localStorage.removeItem(TEMP_ITEMS_KEY);
+    }
+  }, [items]);
+
+  // Auto-save estimate type to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem(TEMP_TYPE_KEY, estimateType);
+    console.log('Auto-saved estimate type to localStorage:', estimateType);
+  }, [estimateType]);
 
   const handleAddItem = async () => {
     if (!materialName.trim() || quantity <= 0 || rate <= 0) return;
@@ -115,6 +157,10 @@ const CreateEstimatePage = () => {
         await saveEstimate(estimate);
       }
 
+      // Clear temporary data after successful save
+      localStorage.removeItem(TEMP_ITEMS_KEY);
+      localStorage.removeItem(TEMP_TYPE_KEY);
+
       // Navigate to summary page
       navigate('/summary', { state: { estimate } });
     } catch (error) {
@@ -127,6 +173,17 @@ const CreateEstimatePage = () => {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleClearAllItems = () => {
+    triggerHaptic('heavy');
+    setItems([]);
+    localStorage.removeItem(TEMP_ITEMS_KEY);
+    localStorage.removeItem(TEMP_TYPE_KEY);
+    toast({
+      title: "All items cleared",
+      description: "All items have been removed from your estimate",
+    });
   };
 
   if (isSaving) {
@@ -187,13 +244,21 @@ const CreateEstimatePage = () => {
           </CardContent>
         </Card>
 
-        {/* Enhanced items list with swipe functionality */}
+        {/* Enhanced items list with individual delete buttons */}
         {items.length > 0 && (
           <Card className="mb-6 animate-fade-in">
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="dark:text-white">
                 Items ({items.length})
               </CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearAllItems}
+                className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+              >
+                Clear All
+              </Button>
             </CardHeader>
             <CardContent className="p-0">
               <div className="divide-y dark:divide-gray-700">
@@ -215,8 +280,18 @@ const CreateEstimatePage = () => {
                           </p>
                         )}
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold text-lg dark:text-white">₹{item.total.toFixed(2)}</p>
+                      <div className="flex items-center gap-3">
+                        <div className="text-right">
+                          <p className="font-bold text-lg dark:text-white">₹{item.total.toFixed(2)}</p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveItem(item.id)}
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 h-8 w-8 p-0"
+                        >
+                          <Trash2 size={16} />
+                        </Button>
                       </div>
                     </div>
                   </SwipeableCard>
