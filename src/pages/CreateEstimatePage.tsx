@@ -1,15 +1,12 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import Navigation from '@/components/Navigation';
-import MaterialSelector from '@/components/estimate/MaterialSelector';
 import EstimateForm from '@/components/estimate/EstimateForm';
-import EstimateItemsList from '@/components/estimate/EstimateItemsList';
 import AppHeader from '@/components/app/AppHeader';
 import SwipeableCard from '@/components/app/SwipeableCard';
 import OfflineIndicator from '@/components/app/OfflineIndicator';
@@ -17,16 +14,14 @@ import LoadingSpinner from '@/components/app/LoadingSpinner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAppBehavior } from '@/hooks/useAppBehavior';
 import { saveEstimate } from '@/services/estimateService';
-import { Material } from '@/services/materialsService';
 
 interface EstimateItem {
   id: string;
   name: string;
-  category: string;
   quantity: number;
-  unit: string;
   rate: number;
   total: number;
+  note?: string;
 }
 
 const CreateEstimatePage = () => {
@@ -36,27 +31,16 @@ const CreateEstimatePage = () => {
   const { isOnline, triggerHaptic } = useAppBehavior();
   
   const [estimateType, setEstimateType] = useState<'electrical' | 'plumbing'>('electrical');
-  const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
+  const [materialName, setMaterialName] = useState<string>('');
   const [quantity, setQuantity] = useState<number>(1);
   const [rate, setRate] = useState<number>(0);
+  const [note, setNote] = useState<string>('');
   const [items, setItems] = useState<EstimateItem[]>([]);
   const [isAdding, setIsAdding] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  useEffect(() => {
-    if (selectedMaterial) {
-      setRate(selectedMaterial.rate);
-    }
-  }, [selectedMaterial]);
-
-  const handleMaterialSelect = (material: Material) => {
-    triggerHaptic('light');
-    setSelectedMaterial(material);
-    setRate(material.rate);
-  };
-
   const handleAddItem = async () => {
-    if (!selectedMaterial || quantity <= 0 || rate <= 0) return;
+    if (!materialName.trim() || quantity <= 0 || rate <= 0) return;
 
     setIsAdding(true);
     triggerHaptic('medium');
@@ -64,24 +48,24 @@ const CreateEstimatePage = () => {
     try {
       const newItem: EstimateItem = {
         id: crypto.randomUUID(),
-        name: selectedMaterial.name,
-        category: selectedMaterial.category,
+        name: materialName.trim(),
         quantity,
-        unit: selectedMaterial.unit,
         rate,
         total: quantity * rate,
+        note: note.trim() || undefined,
       };
 
       setItems(prev => [...prev, newItem]);
       
       // Reset form
-      setSelectedMaterial(null);
+      setMaterialName('');
       setQuantity(1);
       setRate(0);
+      setNote('');
       
       toast({
         title: "Item added",
-        description: `${selectedMaterial.name} has been added to your estimate`,
+        description: `${materialName} has been added to your estimate`,
       });
     } catch (error) {
       console.error('Failed to add item:', error);
@@ -195,18 +179,15 @@ const CreateEstimatePage = () => {
             <CardTitle className="dark:text-white">Add Materials</CardTitle>
           </CardHeader>
           <CardContent>
-            <MaterialSelector
-              estimateType={estimateType}
-              selectedMaterial={selectedMaterial}
-              onMaterialSelect={handleMaterialSelect}
-            />
-            
             <EstimateForm
-              selectedMaterial={selectedMaterial?.name || ''}
+              materialName={materialName}
               quantity={quantity}
               rate={rate}
+              note={note}
+              onMaterialNameChange={setMaterialName}
               onQuantityChange={setQuantity}
               onRateChange={setRate}
+              onNoteChange={setNote}
               onAddItem={handleAddItem}
               isAdding={isAdding}
             />
@@ -233,9 +214,13 @@ const CreateEstimatePage = () => {
                       <div className="flex-1">
                         <p className="font-medium dark:text-white">{item.name}</p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {item.quantity} {item.unit} × ₹{item.rate.toFixed(2)}
+                          {item.quantity} × ₹{item.rate.toFixed(2)}
                         </p>
-                        <p className="text-xs text-gray-400 dark:text-gray-500">{item.category}</p>
+                        {item.note && (
+                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                            Note: {item.note}
+                          </p>
+                        )}
                       </div>
                       <div className="text-right">
                         <p className="font-bold text-lg dark:text-white">₹{item.total.toFixed(2)}</p>

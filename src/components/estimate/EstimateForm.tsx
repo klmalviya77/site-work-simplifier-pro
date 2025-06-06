@@ -1,30 +1,53 @@
+
 import React from "react";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 
 interface EstimateFormProps {
-  selectedMaterial: string;
+  materialName: string;
   quantity: number;
   rate: number;
+  note: string;
+  onMaterialNameChange: (name: string) => void;
   onQuantityChange: (quantity: number) => void;
   onRateChange: (rate: number) => void;
+  onNoteChange: (note: string) => void;
   onAddItem: () => void;
   isAdding?: boolean; // Loading state ke liye
 }
 
 const EstimateForm = ({
-  selectedMaterial,
+  materialName,
   quantity,
   rate,
+  note,
+  onMaterialNameChange,
   onQuantityChange,
   onRateChange,
+  onNoteChange,
   onAddItem,
   isAdding = false,
 }: EstimateFormProps) => {
-  const isDisabled = !selectedMaterial || quantity <= 0 || rate <= 0 || isAdding;
+  const isDisabled = !materialName.trim() || quantity <= 0 || rate <= 0 || isAdding;
 
   return (
     <>
+      {/* Material Name */}
+      <div className="mb-6">
+        <label htmlFor="materialName" className="block text-base font-medium mb-2">
+          Material Name
+        </label>
+        <Input
+          id="materialName"
+          type="text"
+          value={materialName}
+          onChange={(e) => onMaterialNameChange(e.target.value)}
+          placeholder="Enter material name"
+          className="w-full border-2"
+        />
+      </div>
+
       {/* Quantity */}
       <div className="mb-6">
         <label htmlFor="quantity" className="block text-base font-medium mb-2">
@@ -61,6 +84,20 @@ const EstimateForm = ({
           step="0.01"
           placeholder="Enter rate"
           className="w-full border-2"
+        />
+      </div>
+
+      {/* Note (Optional) */}
+      <div className="mb-6">
+        <label htmlFor="note" className="block text-base font-medium mb-2">
+          Note (Optional)
+        </label>
+        <Textarea
+          id="note"
+          value={note}
+          onChange={(e) => onNoteChange(e.target.value)}
+          placeholder="Add any additional remarks..."
+          className="w-full border-2 min-h-[80px]"
         />
       </div>
 
